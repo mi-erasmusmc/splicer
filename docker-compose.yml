@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: splicer-app
+    build: .
+    environment:
+      - DB_CONN=host.docker.internal:3306/splicer?allowPublicKeyRetrieval=true&useSSL=false&verifyServerCertificate=false
+      - DB_USER=root
+      - DB_PASS=test123
+#    depends_on:
+#      splicer-mysql:
+#        condition: service_healthy
+
+
+#  splicer-mysql:
+#    container_name: splicer-mysql
+#    image: mysql:5
+#    command: --default-authentication-plugin=mysql_native_password --max_connections=800 --max_allowed_packet=100M
+#    environment:
+#      - MYSQL_ROOT_PASSWORD=admin
+#      - MYSQL_DATABASE=splicer
+#      - MYSQL_USER=admin
+#      - MYSQL_PASSWORD=admin
+#    healthcheck:
+#      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "admin", "-padmin" ]
+#      timeout: 10s
+#      retries: 10
+#    volumes:
+#      - ./mysql/:/docker-entrypoint-initdb.d/
+#      - mysql-data:/var/lib/mysql
+#    ports:
+#      - 3307:3306
+#
+#volumes:
+#  mysql-data:

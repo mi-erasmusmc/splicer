@@ -19,7 +19,7 @@ public class CleanUp {
     static AdeProcess ade = new AdeProcess();
     static Flow flo = new Flow();
 
-    public static String checkJunk(String b) {
+    private static String checkJunk(String b) {
         Pattern p = Pattern.compile("[0-9]");
         Matcher m = p.matcher(b);
         if (m.find()) {
@@ -39,7 +39,7 @@ public class CleanUp {
         return b;
     }
 
-    public static boolean checkMedraToken(String b) {
+    private static boolean checkMedraToken(String b) {
         String q = "'";
         boolean mappedMedraValid;
         b = b.trim();
@@ -98,7 +98,7 @@ public class CleanUp {
         }
     }
 
-    public static boolean checkSynToken(String b) {
+    private static boolean checkSynToken(String b) {
         String q = "'";
         boolean mappedMedraValid;
         b = b.trim();
@@ -158,7 +158,7 @@ public class CleanUp {
         }
     }
 
-    public static boolean checkMedra(String b) {
+    private static boolean checkMedra(String b) {
         boolean mdFound = false;
         String q = "'";
         b = b.trim();
@@ -198,7 +198,7 @@ public class CleanUp {
         return mdFound;
     }
 
-    public static boolean checkMedra2(String b) {
+    private static boolean checkMedra2(String b) {
         boolean mdFound = false;
         b = b.trim();
 
@@ -228,7 +228,7 @@ public class CleanUp {
         return mdFound;
     }
 
-    public static String getSyn1(String b) {
+    private static String getSyn1(String b) {
         String q = "'";
         b = b.toLowerCase();
         b = " " + b + " ";
@@ -270,7 +270,7 @@ public class CleanUp {
         return b.trim();
     }
 
-    public static String getSwit(String b) {
+    private static String getSwit(String b) {
         String q = "'";
         b = b.toLowerCase();
         b = " " + b + " ";
@@ -310,7 +310,7 @@ public class CleanUp {
         return b.trim();
     }
 
-    public static String getSyn2(String b) {
+    private static String getSyn2(String b) {
         String q = "'";
         b = b.toLowerCase();
         b = " " + b + " ";
@@ -352,7 +352,7 @@ public class CleanUp {
         return b.trim();
     }
 
-    public static String getMedSyns(String b) {
+    private static String getMedSyns(String b) {
         String q = "'";
         b = b.toLowerCase();
 
@@ -507,7 +507,7 @@ public class CleanUp {
         return "";
     }
 
-    public static boolean checkMedraTest(String b) {
+    private static boolean checkMedraTest(String b) {
         String q = "'";
         b = b.toLowerCase();
         b = b.trim();
@@ -639,7 +639,7 @@ public class CleanUp {
         return false;
     }
 
-    public static void concludeMatchandOuput() {
+    private static void concludeMatchandOuput() {
         F5.matchOutcome = "medraMatch";
         F5.finalsMethod[F5.count] = "LM";
         F5.transformFlag = F5.origTerm;
@@ -653,7 +653,7 @@ public class CleanUp {
 
     }
 
-    public static String falseAde(String b) {
+    private static String falseAde(String b) {
         if (F5.junkSet.contains(b)) {
             return "";
         } else {
@@ -877,7 +877,7 @@ public class CleanUp {
         return ftm;
     }
 
-    public boolean checkOR(String f) {
+    private boolean checkOR(String f) {
         F5.escapeMatchOccurred = false;
         if (f.contains(" or ")) {
             tempArray = f.trim().split(" ");
@@ -930,7 +930,7 @@ public class CleanUp {
         return F5.escapeMatchOccurred;
     }
 
-    public String clean1(String f) {
+    private String clean1(String f) {
         for (int j = 0; j < F5.maxClean1; ++j) {
             if (f.endsWith(F5.clean1[j])) {
                 f = f.replaceAll(F5.clean1[j], "");
@@ -942,7 +942,7 @@ public class CleanUp {
         return f;
     }
 
-    public String clean2(String f) {
+    private String clean2(String f) {
         for (int j = 0; j < F5.maxClean2; ++j) {
             if (f.startsWith(F5.clean2[j])) {
                 f = f.replaceFirst(F5.clean2[j], "");
@@ -954,7 +954,7 @@ public class CleanUp {
         return f;
     }
 
-    public String clean3(String f) {
+    private String clean3(String f) {
         for (int j = 0; j < F5.maxClean3; ++j) {
             if (f.equalsIgnoreCase(F5.clean3[j])) {
                 f = "";
@@ -967,7 +967,7 @@ public class CleanUp {
         return f;
     }
 
-    public String cleanConvert(String ft) {
+    private String cleanConvert(String ft) {
         ft = this.clean1(" " + ft + " ");
         ft = this.clean2(" " + ft + " ");
         ft = this.clean3(ft);

@@ -446,7 +446,7 @@ public class Tables {
                             plac = F5.freqArray[mca - 1];
                         }
 
-                        log.debug("table:  " + tt + " pattern: " + pat + "   targetReactions: " + targetReact + "    freq: " + freq + "plac:  " + plac);
+                        log.debug("table: {}   pattern: {}   targetReactions: {}   freq: {}   plac: {}", tt, pat, targetReact, freq, plac);
                         if (freq == null) {
                             freq = "0";
                         }
@@ -486,7 +486,7 @@ public class Tables {
                         plac = F5.freqArray[0];
                     }
 
-                    log.debug("table:  " + tt + " pattern: " + pat + "   targetReactions: " + targetReact + "    freq: " + freq);
+                    log.debug("table: {}   pattern: {}   targetReactions: {}   freq: {}", tt, pat, targetReact, freq);
                     if (plac == null) {
                         plac = "";
                     }
@@ -519,7 +519,7 @@ public class Tables {
                             plac = F5.freqArray[mca - 1];
                         }
 
-                        log.debug("table:  " + tt + " pattern: " + pat + "   targetReactions: " + targetReact + "    freq: " + freq + "plac:  " + plac);
+                        log.debug("table: {}   pattern: {}   targetReactions: {}   freq: {}   plac: {}", tt, pat, targetReact, freq, plac);
                         if (plac == null) {
                             plac = "";
                         }
@@ -565,7 +565,7 @@ public class Tables {
 
                     ++fromMca;
                     ++fromMca2;
-                    log.debug("table:  " + tt + " pattern: " + pat + "   targetReactions: " + targetReact + "    freq: " + freq);
+                    log.debug("table: {}   pattern: {}   targetReactions: {}   freq: {}", tt, pat, targetReact, freq);
                     if (plac == null) {
                         plac = "";
                     }
@@ -601,7 +601,7 @@ public class Tables {
                     plac = F5.freqArray[mca - 1];
                 }
 
-                log.debug("table:  " + tt + " pattern: " + pat + "   targetReactions: " + targetReact + "    freq: " + freq + "plac:  " + plac);
+                log.debug("table: {}   pattern: {}   targetReactions: {}   freq: {}   plac: {}", tt, pat, targetReact, freq, plac);
                 if (plac == null) {
                     plac = "";
                 }

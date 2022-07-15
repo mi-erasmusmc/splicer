@@ -368,7 +368,7 @@ public class Section {
         F5.currentSection = "Black Box (beta)";
         F5.medraCount = 0;
         String normBox = Normals.normal2(F5.allBoxInfo);
-        log.info(normBox);
+        log.debug(normBox);
         normBox = this.stopOnly(normBox);
         AdeProcess.getMedraTermsStop(normBox);
         ade.getUniqueLCS3();

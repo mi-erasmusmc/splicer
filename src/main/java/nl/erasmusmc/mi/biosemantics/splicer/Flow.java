@@ -3,6 +3,7 @@ package nl.erasmusmc.mi.biosemantics.splicer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -18,11 +19,15 @@ public class Flow {
     static AdeProcess ade = new AdeProcess();
     static CleanUp cle = new CleanUp();
     static Section sec = new Section();
+    static StringBuilder allUpdateStatements = new StringBuilder();
 
     public static void sendToDatabase() {
-        String q = "'";
+        String sect = F5.finalsSection[F5.count];
 
-        try (Statement stmt = getConnection().createStatement()) {
+        if (Objects.equals(sect, "Precautions (beta)") || Objects.equals(sect, "Adverse Reactions") || Objects.equals(sect, "Post Marketing") || Objects.equals(sect, "Warnings (beta)") || Objects.equals(sect, "Black Box (beta)")) {
+
+            String q = "'";
+
             String targetTable;
             String quer1;
             String quer2;
@@ -35,18 +40,11 @@ public class Flow {
             }
 
             quer1 = "INSERT INTO " + targetTable + " (SPL_ID, SET_ID, TRADE_NAME, SPL_DATE, SPL_SECTION, CONDITION_SOURCE_VALUE, CONDITION_LLT, parseMethod, sentenceNum, labdirection, drugfreq) VALUES(";
-            quer2 = q + F5.SPLId + q + "," + q + F5.setId + q + "," + q + F5.tradeDrugName.trim() + q + "," + q + F5.SPLDate + q + "," + q + F5.finalsSection[F5.count] + q + "," + q + F5.origSPLTerm + q + "," + q + F5.finalMedraTerms[F5.count] + q + "," + q + F5.finalsMethod[F5.count] + q + "," + q + F5.sentNumArray[F5.count] + q + "," + q + F5.direction + q + "," + q + F5.finalFreq[F5.count] + q + ")";
+            quer2 = q + F5.SPLId + q + "," + q + F5.setId + q + "," + q + F5.tradeDrugName.trim() + q + "," + q + F5.SPLDate + q + "," + q + F5.finalsSection[F5.count] + q + "," + q + F5.origSPLTerm + q + "," + q + F5.finalMedraTerms[F5.count] + q + "," + q + F5.finalsMethod[F5.count] + q + "," + q + F5.sentNumArray[F5.count] + q + "," + q + F5.direction + q + "," + q + F5.finalFreq[F5.count] + q + "); ";
             allQuer = quer1 + quer2;
             log.debug("Inserting into table {}, {} - {}", targetTable, F5.tradeDrugName, F5.finalMedraTerms[F5.count]);
             log.debug("DB insert query:  {}", allQuer);
-            String sect = F5.finalsSection[F5.count];
-            if (Objects.equals(sect, "Precautions (beta)") || Objects.equals(sect, "Adverse Reactions") || Objects.equals(sect, "Post Marketing") || Objects.equals(sect, "Warnings (beta)") || Objects.equals(sect, "Black Box (beta)")) {
-                stmt.executeUpdate(allQuer);
-            }
-
-        } catch (Exception var11) {
-            log.error("Got an exception inserting into db");
-            log.error(var11.getMessage());
+            allUpdateStatements.append(allQuer);
         }
 
     }
@@ -76,6 +74,21 @@ public class Flow {
             return false;
         } else {
             return f.length() > 2;
+        }
+    }
+
+    public static void commitToDB() {
+        String query = allUpdateStatements.toString();
+        if (!query.isBlank()) {
+            try (Statement stmt = getConnection().createStatement()) {
+                log.info("Committing matches to database");
+                stmt.execute(query);
+                allUpdateStatements = new StringBuilder();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } else {
+            log.info("Nothing to commit");
         }
     }
 
@@ -290,5 +303,4 @@ public class Flow {
         F5.transformFlag = Normals.normalizeFilter(F5.transformFlag);
         F5.finalMedraTerms[F5.count] = cle.finalTransform(F5.finalMedraTerms[F5.count]);
     }
-
 }

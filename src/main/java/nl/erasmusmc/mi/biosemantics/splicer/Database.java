@@ -21,6 +21,7 @@ public class Database {
                 String userName = System.getProperty("db_user");
                 String password = System.getProperty("db_pass");
                 String connectionString = System.getProperty("db_conn");
+                connectionString += "&allowMultiQueries=true";
                 log.info("Connecting to: {}", connectionString);
                 connection = DriverManager.getConnection(connectionString, userName, password);
             }

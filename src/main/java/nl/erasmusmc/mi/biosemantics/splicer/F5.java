@@ -322,10 +322,10 @@ public class F5 {
         reportEnd = "<code code=";
         foundValidReport = true;
         flo.gatherData();
-//        if (Validation.alreadyExists(F5.setId)) {
-//            log.info("We already have {}, not splicing", F5.setId);
-//            return;
-//        }
+        if (Validation.alreadyExists(F5.setId)) {
+            log.info("We already have {}, not splicing", F5.setId);
+            return;
+        }
 
 
         if (fullMessage.equals("")) {
@@ -343,7 +343,7 @@ public class F5 {
             if (finalMedraCount == -1) {
                 log.debug("{} finalMedra:   NO ADES found", F5.count);
             } else {
-                Flow.deleteFromDatabase(SPLId);
+//                Flow.deleteFromDatabase(SPLId);
 
                 while (count <= maxMedraCount) {
                     finalMedraTerms[count] = flo.cleanUpTerms2(finalMedraTerms[count]);
@@ -388,6 +388,7 @@ public class F5 {
                 }
             }
         }
+        Flow.commitToDB();
     }
 
     public static void processAdeSection() {

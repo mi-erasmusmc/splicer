@@ -190,7 +190,7 @@ public class F5 {
     static String[] allWords3 = new String[10000];
 
 
-    public static void startPro() {
+    private static void startProcess() {
 
         loader.getFilters();
         if (!outputPath.equals("")) {
@@ -450,7 +450,7 @@ public class F5 {
                         flo.processSentenceWithHighCommaRatio();
                     } else {
                         log.debug("         Likely NOT list comma ratio : {}   {}", commaRatio, nSpl);
-                        AdeProcess.getMedraTerms(nSpl);
+                        AdeProcess.getMeddraTerms(nSpl);
                     }
 
                     if (!isList) {
@@ -473,8 +473,6 @@ public class F5 {
 
     public static void main(String[] args) {
         validateProperties();
-
-
         if (args.length > 0) {
             inputPar = args[0];
         }
@@ -484,7 +482,7 @@ public class F5 {
         if (args.length > 2) {
             outputPar = args[2];
         }
-        startPro();
+        startProcess();
     }
 
     private static void validateProperties() {

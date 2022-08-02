@@ -18,15 +18,12 @@ public class Loader {
 
     public static void loadDirectionDefaults() {
         int dd = 0;
-        String tab = "defaultdirections";
-
         String f1;
         String f2;
 
-
         try (Statement stmt = getConnection().createStatement()) {
 
-            String query = "SELECT labtest,direction FROM " + tab;
+            String query = "SELECT labtest,direction FROM defaultdirections";
 
             for (ResultSet rs = stmt.executeQuery(query); rs.next(); ++dd) {
                 f1 = rs.getString("LabTest");
@@ -42,7 +39,7 @@ public class Loader {
                 f1 = f1.toLowerCase();
                 F5.defaultLab[dd] = f1;
                 F5.defaultDirection[dd] = f2;
-                log.debug("loading defaultdirections: " + f1 + "  " + f2);
+                log.debug("loading default-directions: {}   {}", f1, f2);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -57,9 +54,7 @@ public class Loader {
             int rowCount;
             for (rowCount = 0; (line2 = in.readLine()) != null; ++rowCount) {
                 log.debug(line2);
-                line2 = line2.trim();
-                line2 = line2.toLowerCase();
-                line2 = " " + line2;
+                line2 = " " + line2.trim().toLowerCase();
                 F5.clean1[rowCount] = line2;
                 if (!F5.clean1[rowCount].equals("")) {
                     F5.clean1[rowCount] = F5.clean1[rowCount] + " ";
@@ -79,8 +74,7 @@ public class Loader {
             int rowCount;
             for (rowCount = 0; (line2 = in.readLine()) != null; ++rowCount) {
                 log.debug(line2);
-                line2 = line2.trim();
-                line2 = line2.toLowerCase();
+                line2 = line2.trim().toLowerCase();
                 F5.clean2[rowCount] = line2;
                 if (!F5.clean2[rowCount].equals("")) {
                     F5.clean2[rowCount] = " " + F5.clean2[rowCount] + " ";
@@ -100,8 +94,7 @@ public class Loader {
             int rowCount;
             for (rowCount = 0; (line2 = in.readLine()) != null; ++rowCount) {
                 log.debug(line2);
-                line2 = line2.trim();
-                line2 = line2.toLowerCase();
+                line2 = line2.trim().toLowerCase();
                 F5.clean3[rowCount] = line2;
             }
 

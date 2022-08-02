@@ -249,7 +249,7 @@ public class Section {
                 F5.allAdeInfo = F5.allAdeInfo + "\n " + line;
                 F5.fullMessage = F5.allAdeInfo;
                 F5.adeInt = 0;
-                log.debug("Loaded full message");
+                log.debug("Loaded full message:");
                 log.debug(F5.fullMessage);
             } else {
                 line = this.checkTableForParagraph(lin);
@@ -352,10 +352,9 @@ public class Section {
     public void processSections() {
         F5.currentSection = "over";
         F5.medraCount = 0;
-        String normOver = Normals.normal2(F5.allOverInfo);
-        normOver = normOver.toLowerCase();
+        String normOver = Normals.normal2(F5.allOverInfo).toLowerCase();
         normOver = this.stopOnly(normOver);
-        AdeProcess.getMedraTermsStop(normOver);
+        AdeProcess.getMeddraTermsStop(normOver);
         ade.getUniqueLCS3();
 //        F5.currentSection = "Precautions (beta)";
 //        F5.medraCount = 0;
@@ -367,40 +366,40 @@ public class Section {
 //        ade.getUniqueLCS3();
         F5.currentSection = "Black Box (beta)";
         F5.medraCount = 0;
-        String normBox = Normals.normal2(F5.allBoxInfo);
+        String normBox = Normals.normal2(F5.allBoxInfo).toLowerCase();
+        log.debug("Black Box:");
         log.debug(normBox);
-        normBox = this.stopOnly(normBox);
-        AdeProcess.getMedraTermsStop(normBox);
+        normBox = stopOnly(normBox);
+        AdeProcess.getMeddraTerms(normBox);
         ade.getUniqueLCS3();
         F5.currentSection = "ind_HV";
         F5.medraCount = 0;
         String normHvi = Normals.normal2(F5.highValueInd);
         normHvi = this.stopOnly(normHvi);
-        AdeProcess.getMedraTermsStop(normHvi);
+        AdeProcess.getMeddraTermsStop(normHvi);
         ade.getUniqueLCS3();
         F5.currentSection = "ind_LV";
         F5.medraCount = 0;
         String normLvi = Normals.normal2(F5.lowValueInd);
         normLvi = this.stopOnly(normLvi);
-        AdeProcess.getMedraTermsStop(normLvi);
+        AdeProcess.getMeddraTermsStop(normLvi);
         ade.getUniqueLCS3();
         F5.currentSection = "cont_HV";
         F5.medraCount = 0;
         String normHvc = Normals.normal2(F5.highValueCont);
         normHvc = this.stopOnly(normHvc);
-        AdeProcess.getMedraTermsStop(normHvc);
+        AdeProcess.getMeddraTermsStop(normHvc);
         ade.getUniqueLCS3();
         F5.currentSection = "cont_LV";
         F5.medraCount = 0;
         String normLvc = Normals.normal2(F5.lowValueCont);
         this.stopOnly(normLvc);
-        AdeProcess.getMedraTermsStop(normHvc);
+        AdeProcess.getMeddraTermsStop(normHvc);
         ade.getUniqueLCS3();
     }
 
     public String stopOnly(String b) {
-        b = b.toLowerCase();
-        String[] tempArray = b.split(" ");
+        String[] tempArray = b.toLowerCase().split(" ");
         StringBuilder allWords = new StringBuilder();
 
         for (String s : tempArray) {

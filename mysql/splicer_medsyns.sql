@@ -1084,3 +1084,5 @@ INSERT INTO splicer.medsyns (Effect, MDRTerm) VALUES (' taste distortion in each
 INSERT INTO splicer.medsyns (Effect, MDRTerm) VALUES (' special senses visual loss ', 'Vision loss');
 INSERT INTO splicer.medsyns (Effect, MDRTerm) VALUES (' hypopigmentation ', 'Skin hypopigmentation');
 INSERT INTO splicer.medsyns (Effect, MDRTerm) VALUES (' impaction ', 'Impaction fecal');
+INSERT INTO splicer.medsyns (Effect, MDRTerm) VALUES (' serious cutaneous reactions ', 'Severe cutaneous adverse reaction');
+INSERT INTO splicer.medsyns (Effect, MDRTerm) VALUES (' cutaneous reactions ', 'Skin reaction');

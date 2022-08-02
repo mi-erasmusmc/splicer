@@ -597,13 +597,13 @@ public class CleanUp {
         if (d.contains("increased")) {
             F5.medraFound = checkMedra2(a + " increased");
             if (F5.medraFound) {
-                concludeMatchandOuput();
+                concludeMatchAndOutput();
                 return true;
             }
 
             F5.medraFound = checkMedra2("blood " + a + " increased");
             if (F5.medraFound) {
-                concludeMatchandOuput();
+                concludeMatchAndOutput();
                 return true;
             }
         }
@@ -611,13 +611,13 @@ public class CleanUp {
         if (d.contains("decreased")) {
             F5.medraFound = checkMedra2(a + " decreased");
             if (F5.medraFound) {
-                concludeMatchandOuput();
+                concludeMatchAndOutput();
                 return true;
             }
 
             F5.medraFound = checkMedra2("blood " + a + " decreased");
             if (F5.medraFound) {
-                concludeMatchandOuput();
+                concludeMatchAndOutput();
                 return true;
             }
         }
@@ -625,13 +625,13 @@ public class CleanUp {
         if (d.contains("abnormal")) {
             F5.medraFound = checkMedra2(a + " abnormal");
             if (F5.medraFound) {
-                concludeMatchandOuput();
+                concludeMatchAndOutput();
                 return true;
             }
 
             F5.medraFound = checkMedra2("blood " + a + " abnormal");
             if (F5.medraFound) {
-                concludeMatchandOuput();
+                concludeMatchAndOutput();
                 return true;
             }
         }
@@ -639,7 +639,7 @@ public class CleanUp {
         return false;
     }
 
-    private static void concludeMatchandOuput() {
+    private static void concludeMatchAndOutput() {
         F5.matchOutcome = "medraMatch";
         F5.finalsMethod[F5.count] = "LM";
         F5.transformFlag = F5.origTerm;

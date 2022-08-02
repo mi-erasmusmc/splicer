@@ -35,7 +35,7 @@ public class Flow {
 
             targetTable = SPLICER_JANSSEN;
             if (!Objects.equals(F5.matchOutcome, "medraMatch")) {
-                log.debug("I am NOT a MATCH");
+                log.debug("{} does not match a MedDRA term", F5.origSPLTerm);
                 return;
             }
 
@@ -43,7 +43,6 @@ public class Flow {
             quer2 = q + F5.SPLId + q + "," + q + F5.setId + q + "," + q + F5.tradeDrugName.trim() + q + "," + q + F5.SPLDate + q + "," + q + F5.finalsSection[F5.count] + q + "," + q + F5.origSPLTerm + q + "," + q + F5.finalMedraTerms[F5.count] + q + "," + q + F5.finalsMethod[F5.count] + q + "," + q + F5.sentNumArray[F5.count] + q + "," + q + F5.direction + q + "," + q + F5.finalFreq[F5.count] + q + "); ";
             allQuer = quer1 + quer2;
             log.debug("Inserting into table {}, {} - {}", targetTable, F5.tradeDrugName, F5.finalMedraTerms[F5.count]);
-            log.debug("DB insert query:  {}", allQuer);
             allUpdateStatements.append(allQuer);
         }
 
@@ -165,7 +164,7 @@ public class Flow {
             ade.getList3(F5.sentForList);
             F5.isList = true;
         } else {
-            AdeProcess.getMedraTerms(F5.nSpl);
+            AdeProcess.getMeddraTerms(F5.nSpl);
         }
 
     }
@@ -182,7 +181,7 @@ public class Flow {
         sec.processSections();
         F5.maxMedraCount = F5.finalMedraCount - 1;
         F5.count = 0;
-        log.debug(F5.count + "FFFFFFFFFFFFFFFFFFFFFF  finalMedra Terms Below:   ");
+        log.debug("Done post-Ade-Processing");
     }
 
     public void assignMethod() {

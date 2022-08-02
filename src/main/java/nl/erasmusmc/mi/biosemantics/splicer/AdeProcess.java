@@ -15,10 +15,9 @@ public class AdeProcess {
     static CleanUp cle = new CleanUp();
     static int testNum = 0;
 
-    public static void getMedraTerms(String b) {
+    public static void getMeddraTerms(String b) {
         if (!b.equals("")) {
             String origB = b;
-            String q = "'";
             b = b.toLowerCase();
             b = " " + b + " ";
 
@@ -26,7 +25,7 @@ public class AdeProcess {
             String MH;
 
             try (Statement stmt = getConnection().createStatement()) {
-                String quer = "Select Medra2 from " + tab + " where (((InStr(" + q + b + q + ", Medra2))>0))";
+                String quer = "Select Medra2 from " + tab + " where (((InStr('" + b + "', Medra2))>0))";
                 ResultSet rs = stmt.executeQuery(quer);
 
                 while (rs.next()) {
@@ -51,23 +50,22 @@ public class AdeProcess {
             }
 
             testNum = F5.medraCount;
-            getMedraSyns(origB);
+            getMeddraSynonyms(origB);
         }
 
     }
 
-    public static void getMedraTermsStop(String b) {
+    public static void getMeddraTermsStop(String b) {
         String q = "'";
         log.debug("Getting MedDRA Terms Stop");
         log.debug(b);
         b = b.trim();
         b = " " + b;
 
-        String tab = MEDRA_DB_WITHOUT_REVERSE_STEMS;
         String MH;
 
         try (Statement stmt = getConnection().createStatement()) {
-            String quer = "Select Medra2, Stops from " + tab + " where (((InStr(" + q + b + q + ", Stops))>0))";
+            String quer = "Select Medra2, Stops from " + MEDRA_DB_WITHOUT_REVERSE_STEMS + " where (((InStr('" + b + "', Stops))>0))";
             ResultSet rs = stmt.executeQuery(quer);
 
             while (rs.next()) {
@@ -93,7 +91,7 @@ public class AdeProcess {
         }
     }
 
-    public static void getMedraSyns(String b) {
+    public static void getMeddraSynonyms(String b) {
         String q = "'";
         b = b.toLowerCase();
 
@@ -120,7 +118,7 @@ public class AdeProcess {
                 }
             }
         } catch (Exception var14) {
-            log.error("Got an exception getMEdraSyns in query");
+            log.error("Got an exception getMeddraSynonyms in query");
             log.error(var14.getMessage());
         }
     }
@@ -130,11 +128,10 @@ public class AdeProcess {
         b = b.toLowerCase();
         b = " " + b + " ";
 
-        String tab = MEDRA_DB_WITHOUT_REVERSE;
         String MH;
 
         try (Statement stmt = getConnection().createStatement()) {
-            String quer = "Select Medra2 from " + tab + " where (((InStr(" + q + b + q + ", Medra2))>0))";
+            String quer = "Select Medra2 from " + MEDRA_DB_WITHOUT_REVERSE + " where (((InStr(" + q + b + q + ", Medra2))>0))";
             ResultSet rs = stmt.executeQuery(quer);
 
             while (rs.next()) {
@@ -345,10 +342,10 @@ public class AdeProcess {
                     F5.allWords[F5.medraCount] = "L1 " + tempMedTerm;
                     ++F5.medraCount;
                 } else {
-                    getMedraTerms(tempMedTerm);
+                    getMeddraTerms(tempMedTerm);
                 }
             } else {
-                getMedraTerms(tempMedTerm);
+                getMeddraTerms(tempMedTerm);
             }
         }
 
@@ -400,7 +397,7 @@ public class AdeProcess {
                 }
             } else if (tempMedTerm.length() > 3) {
                 if (F5.tempArray3.length > 4) {
-                    getMedraTerms(tempMedTerm);
+                    getMeddraTerms(tempMedTerm);
                 } else {
                     F5.allWords[F5.medraCount] = "L2 " + tempMedTerm;
                     ++F5.medraCount;
@@ -459,10 +456,10 @@ public class AdeProcess {
                     F5.allWords[F5.medraCount] = "L3 " + tempMedTerm;
                     ++F5.medraCount;
                 } else {
-                    getMedraTerms(tempMedTerm);
+                    getMeddraTerms(tempMedTerm);
                 }
             } else {
-                getMedraTerms(tempMedTerm);
+                getMeddraTerms(tempMedTerm);
             }
         }
 
@@ -536,7 +533,7 @@ public class AdeProcess {
                         ++F5.medraCount;
                     }
                 } else if (F5.tempArray3.length > 7 && tempMedTerm.length() >= 3) {
-                    getMedraTerms(tempMedTerm);
+                    getMeddraTerms(tempMedTerm);
                 }
             }
         }
@@ -773,7 +770,7 @@ public class AdeProcess {
 
         if (F5.goodCount > 0 && !F5.tableToMedra) {
             for (F5.count = 0; F5.count < F5.goodCount; ++F5.count) {
-                log.debug(F5.sSection[F5.count] + "........" + F5.goodWords2[F5.count]);
+                log.debug("Section [{}] found: {}", F5.sSection[F5.count], F5.goodWords2[F5.count]);
                 PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", "", "0", "0", "0");
             }
         }

@@ -1088,3 +1088,5 @@ INSERT INTO splicer.medsyns_withstems (Effect, MDRTerm, EffectStems) VALUES (' t
 INSERT INTO splicer.medsyns_withstems (Effect, MDRTerm, EffectStems) VALUES (' special senses visual loss ', 'Vision loss', ' special sens visual loss ');
 INSERT INTO splicer.medsyns_withstems (Effect, MDRTerm, EffectStems) VALUES (' hypopigmentation ', 'Skin hypopigmentation', ' hypopigment ');
 INSERT INTO splicer.medsyns_withstems (Effect, MDRTerm, EffectStems) VALUES (' impaction ', 'Impaction fecal', ' impact ');
+INSERT INTO splicer.medsyns_withstems (Effect, MDRTerm, EffectStems) VALUES (' serious cutaneous reactions ', 'Severe cutaneous adverse reaction', ' serious cutan reaction ');
+INSERT INTO splicer.medsyns_withstems (Effect, MDRTerm, EffectStems) VALUES (' cutaneous reactions ', 'Skin reaction', ' cutan reaction ');

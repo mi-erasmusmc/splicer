@@ -7,7 +7,7 @@ SPLICER is a rule-based natural language processing tool that extracts adverse r
 Product Label (SPL) and maps these terms to the Medical Dictionary of Regulatory Activities (MedDRA). SPLICER uses a
 series of regular expressions and algorithms to identify and extract data from SPL’s.
 
-**Note** This is **not** the original SPLICER code, it is code that was decompiled from a binary file and then
+**Note:** This is **not** the original SPLICER code, it is code that was decompiled from a binary file and then
 refactored a bit in order to make half sense.
 
 Duke JD, Friedlin J. ADESSA: A Real-Time Decision Support Service for Delivery of Semantically Coded Adverse Drug Event

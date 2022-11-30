@@ -1,11 +1,11 @@
-FROM maven:3.8-openjdk-11 AS builder
+FROM maven:3.8-eclipse-temurin-17-alpine AS builder
 RUN mkdir /project
 COPY . /project
 WORKDIR /project
 RUN mvn dependency:go-offline -B
 RUN mvn clean package assembly:single -DskipTests
 
-FROM adoptopenjdk/openjdk11:alpine-jre
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 RUN mkdir /app/data
 RUN addgroup --system javauser && adduser -S -s /bin/false -G javauser javauser

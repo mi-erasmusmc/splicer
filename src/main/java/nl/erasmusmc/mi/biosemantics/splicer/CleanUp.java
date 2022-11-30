@@ -4,55 +4,69 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_MEDDRATESTS;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_MEDSYNS;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_MEDSYNS_WITHSTEMS;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_SWIT;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_SYN_1;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_SYN_2;
 import static nl.erasmusmc.mi.biosemantics.splicer.Database.getConnection;
+import static nl.erasmusmc.mi.biosemantics.splicer.F5.fail;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.L2M;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.LM;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.M1;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.MS;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.NONE;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.T1M1;
 
 public class CleanUp {
-    public static final String MEDRA_DB_WITHOUT_REVERSE_STEMS = "medra_db_without_reverse_stems";
     private static final Logger log = LogManager.getLogger();
-    static String[] tempArray = new String[1000];
-    static String[] tempArray2 = new String[1000];
-    static NonAde nde = new NonAde();
-    static AdeProcess ade = new AdeProcess();
-    static Flow flo = new Flow();
 
-    private static String checkJunk(String b) {
-        Pattern p = Pattern.compile("[0-9]");
+
+    private final Splicer splicer;
+    private String[] tempArray = new String[1000];
+    private String[] tempArray2 = new String[1000];
+    private boolean meddraFound = false;
+    private String foundMeddra = "";
+    private String medStem = "";
+
+
+    public CleanUp(Splicer splicer) {
+        this.splicer = splicer;
+    }
+
+    private boolean isJunk(String b) {
+        Pattern p = Pattern.compile("\\d");
         Matcher m = p.matcher(b);
         if (m.find()) {
-            b = "";
+            return true;
         } else {
             p = Pattern.compile("-");
             m = p.matcher(b);
-
-            int dashCount;
-            for (dashCount = 0; m.find(); ++dashCount) {
+            int dashCount = 0;
+            while (m.find()) {
+                dashCount++;
             }
-
-            if (dashCount > 1) {
-                b = "";
-            }
+            return dashCount > 1;
         }
-        return b;
     }
 
-    private static boolean checkMedraToken(String b) {
-        String q = "'";
+    private boolean checkMeddraToken(String b) {
         boolean mappedMedraValid;
         b = b.trim();
-
         tempArray = b.split(" ");
+        var q = "Select Medra2, Stems from " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " where Stems LIKE ?";
+        try (var stmt = getConnection().prepareStatement(q)) {
+            stmt.setString(1, "%" + tempArray[0] + "%");
+            ResultSet rs = stmt.executeQuery();
 
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
             String lowerMedStem;
             String spacedTerm;
-
-            quer = "Select Medra2, Stems from " + MEDRA_DB_WITHOUT_REVERSE_STEMS + " where Stems LIKE " + q + "%" + tempArray[0] + "%" + q;
-            ResultSet rs = stmt.executeQuery(quer);
 
             do {
                 do {
@@ -61,20 +75,19 @@ public class CleanUp {
                     }
 
                     mappedMedraValid = true;
-                    F5.foundMedra = rs.getString("Medra2");
+                    foundMeddra = rs.getString("Medra2");
                     if (rs.wasNull()) {
-                        F5.foundMedra = "";
+                        foundMeddra = "";
                     }
 
-                    F5.medStem = rs.getString("Stems");
+                    medStem = rs.getString("Stems");
                     if (rs.wasNull()) {
-                        F5.medStem = "";
+                        medStem = "";
                     }
 
-                    F5.medStem = F5.medStem.toLowerCase();
 
                     b = b.trim();
-                    lowerMedStem = F5.medStem.toLowerCase();
+                    lowerMedStem = medStem;
                     lowerMedStem = lowerMedStem.trim();
                     tempArray = b.split(" ");
                     tempArray2 = lowerMedStem.split(" ");
@@ -91,28 +104,25 @@ public class CleanUp {
             } while (!mappedMedraValid);
 
             return true;
-        } catch (Exception var16) {
-            log.error("Got an exception checkMedraToken query");
-            log.error(var16.getMessage());
+        } catch (SQLException e) {
+            fail(e);
             return false;
         }
     }
 
-    private static boolean checkSynToken(String b) {
-        String q = "'";
+    private boolean checkSynToken(String b) {
         boolean mappedMedraValid;
-        b = b.trim();
+        tempArray = b.trim().split(" ");
 
-        tempArray = b.split(" ");
-        String tab = "medsyns_withstems";
+        var q = "Select MDRTerm, EffectStems from " + TABLE_MEDSYNS_WITHSTEMS + " where EffectStems LIKE ?";
 
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
+        try (var stmt = getConnection().prepareStatement(q)) {
+            stmt.setString(1, "%" + tempArray[0] + "%");
+            ResultSet rs = stmt.executeQuery();
+
             String lowerMedStem;
             String spacedTerm;
 
-            quer = "Select MDRTerm, EffectStems from " + tab + " where EffectStems LIKE " + q + "%" + tempArray[0] + "%" + q;
-            ResultSet rs = stmt.executeQuery(quer);
 
             do {
                 do {
@@ -121,20 +131,20 @@ public class CleanUp {
                     }
 
                     mappedMedraValid = true;
-                    F5.foundMedra = rs.getString("MDRTerm");
+                    foundMeddra = rs.getString("MDRTerm");
                     if (rs.wasNull()) {
-                        F5.foundMedra = "";
+                        foundMeddra = "";
                     }
 
-                    F5.medStem = rs.getString("EffectStems");
+                    medStem = rs.getString("EffectStems");
                     if (rs.wasNull()) {
-                        F5.medStem = "";
+                        medStem = "";
                     }
 
-                    F5.medStem = F5.medStem.toLowerCase();
+                    medStem = medStem.toLowerCase();
 
                     b = b.trim();
-                    lowerMedStem = F5.medStem.toLowerCase();
+                    lowerMedStem = medStem.toLowerCase();
                     lowerMedStem = lowerMedStem.trim();
                     tempArray = b.split(" ");
                     tempArray2 = lowerMedStem.split(" ");
@@ -151,389 +161,276 @@ public class CleanUp {
             } while (!mappedMedraValid);
 
             return true;
-        } catch (Exception var16) {
-            log.error("Got an exception checkSynToken query");
-            log.error(var16.getMessage());
+        } catch (SQLException e) {
+            fail(e);
             return false;
         }
     }
 
-    private static boolean checkMedra(String b) {
-        boolean mdFound = false;
-        String q = "'";
-        b = b.trim();
-        b = " " + b;
-
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
-
-
-            quer = "Select Medra2, Stems from " + MEDRA_DB_WITHOUT_REVERSE_STEMS + " where Stems = " + q + b + q;
-            ResultSet rs = stmt.executeQuery(quer);
-
-            StringBuilder bBuilder = new StringBuilder(b);
-            while (rs.next()) {
-                F5.foundMedra = rs.getString("Medra2");
-                if (rs.wasNull()) {
-                    F5.foundMedra = "";
-                }
-
-                F5.medStem = rs.getString("Stems");
-                if (rs.wasNull()) {
-                    F5.medStem = "";
-                }
-
-                F5.medStem = F5.medStem.toLowerCase();
-                bBuilder.append(" ");
-                if (bBuilder.toString().equalsIgnoreCase(F5.medStem)) {
-                    mdFound = true;
-                    break;
-                }
-            }
-        } catch (Exception var15) {
-            log.error("Got an exception checkMedra in query");
-            log.error(var15.getMessage());
-        }
-
-        return mdFound;
-    }
-
-    private static boolean checkMedra2(String b) {
-        boolean mdFound = false;
-        b = b.trim();
-
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer = "Select Medra2, Stems from " + MEDRA_DB_WITHOUT_REVERSE_STEMS + " where Medra2 = ' " + b + " '";
-            ResultSet rs = stmt.executeQuery(quer);
+    private boolean checkMeddra(String b) {
+        var q = "Select Medra2, Stems from " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " where Stems = ? limit 1";
+        try (var ps = getConnection().prepareStatement(q)) {
+            ps.setString(1, " " + b.trim() + " ");
+            ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                F5.foundMedra = rs.getString("Medra2");
-                if (rs.wasNull()) {
-                    F5.foundMedra = "";
-                }
-
-                F5.medStem = rs.getString("Stems");
-                if (rs.wasNull()) {
-                    F5.medStem = "";
-                }
-
-                F5.medStem = F5.medStem.toLowerCase();
-                mdFound = true;
+                foundMeddra = rs.getString("Medra2");
+                medStem = rs.getString("Stems");
+                return true;
             }
-
-        } catch (Exception e) {
-            log.error("Got an exception checkMedra2 in query");
-            log.error(e.getMessage());
+        } catch (SQLException e) {
+            fail(e);
         }
-
-        return mdFound;
+        return false;
     }
 
-    private static String getSyn1(String b) {
-        String q = "'";
-        b = b.toLowerCase();
-        b = " " + b + " ";
+    private boolean checkMeddra2(String b) {
+        String q = "Select Medra2, Stems from " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " where Medra2 = ?";
+        try (var stmt = getConnection().prepareStatement(q)) {
+            stmt.setString(1, " " + b.trim() + " ");
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                foundMeddra = rs.getString("Medra2");
+                medStem = rs.getString("Stems");
+                return true;
+            }
+        } catch (SQLException e) {
+            fail(e);
+        }
+        return false;
+    }
 
-        String tab = "syn1";
+    private String getSyn1(String b) {
 
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
-            String f1;
-            String f2;
-
-
-            quer = "Select Field1,Field2 from " + tab + " where (((InStr(" + q + b + q + ", Field1))>0))";
-            ResultSet rs = stmt.executeQuery(quer);
+        var q = "Select Field1,Field2 from " + TABLE_SYN_1 + " where (((InStr(?, Field1))>0))";
+        try (var stmt = getConnection().prepareStatement(q)) {
+            stmt.setString(1, " " + b + " ");
+            ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                f1 = rs.getString("Field1");
+                var f1 = rs.getString("Field1");
                 if (rs.wasNull()) {
                     f1 = "";
                 }
 
-                f2 = rs.getString("Field2");
+                var f2 = rs.getString("Field2");
                 if (rs.wasNull()) {
                     f2 = "";
                 }
 
-                if (!f1.equalsIgnoreCase("") && !f1.equalsIgnoreCase(" ")) {
-
+                if (!f1.isBlank() && !f1.equalsIgnoreCase(" ")) {
                     f2 = " " + f2 + " ";
-                    b = b.replaceAll(f1, f2);
+                    b = b.replace(f1, f2);
                 }
             }
 
-        } catch (Exception var14) {
-            log.error("Got an exception getSyn1 in query");
-            log.error(var14.getMessage());
+        } catch (SQLException e) {
+            fail(e);
         }
 
         return b.trim();
     }
 
-    private static String getSwit(String b) {
-        String q = "'";
-        b = b.toLowerCase();
-        b = " " + b + " ";
+    private String getSwit(String b) {
+        String q = "Select Field1,Field2 from " + TABLE_SWIT + " where (((InStr(?, Field1))>0))";
 
-        String tab = "swit";
-
-        try (Statement stmt = getConnection().createStatement()) {
-            String f1;
-            String f2;
-
-            String quer = "Select Field1,Field2 from " + tab + " where (((InStr(" + q + b + q + ", Field1))>0))";
-            ResultSet rs = stmt.executeQuery(quer);
+        try (var stmt = getConnection().prepareStatement(q)) {
+            stmt.setString(1, " " + b + " ");
+            ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                f1 = rs.getString("Field1");
+                var f1 = rs.getString("Field1");
                 if (rs.wasNull()) {
                     f1 = "";
                 }
 
-                f2 = rs.getString("Field2");
+                var f2 = rs.getString("Field2");
                 if (rs.wasNull()) {
                     f2 = "";
                 }
 
                 if (b.startsWith(f1)) {
-                    b = b.replaceAll(f1, "");
+                    b = b.replace(f1, "");
 
                     b = b + " " + f2;
                 }
             }
 
-        } catch (Exception var14) {
-            log.error("Got an exception getSwit query");
-            log.error(var14.getMessage());
+        } catch (Exception e) {
+            fail(e);
         }
 
         return b.trim();
     }
 
-    private static String getSyn2(String b) {
-        String q = "'";
-        b = b.toLowerCase();
+    private String getSyn2(String b) {
         b = " " + b + " ";
-        b = b.replaceAll("\\(", "");
-        b = b.replaceAll("\\)", "");
-        String tab = "syn2";
+        b = b.replaceAll("\\(", "")
+                .replaceAll("\\)", "");
 
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
-            String f1;
-            String f2;
-
-            quer = "Select Field1,Field2 from " + tab + " where (((InStr(" + q + b + q + ", Field1))>0))";
-            ResultSet rs = stmt.executeQuery(quer);
+        var q = "Select Field1, Field2 from " + TABLE_SYN_2 + " where InStr(?, Field1)>0";
+        try (var stmt = getConnection().prepareStatement(q)) {
+            stmt.setString(1, b);
+            ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                f1 = rs.getString("Field1");
+                var f1 = rs.getString("Field1");
                 if (rs.wasNull()) {
                     f1 = "";
                 }
 
-                f2 = rs.getString("Field2");
+                var f2 = rs.getString("Field2");
                 if (rs.wasNull()) {
                     f2 = "";
                 }
 
                 f1 = f1 + " ";
                 if (b.endsWith(f1)) {
-                    b = b.replaceAll(f1, "");
+                    b = b.replace(f1, "");
                     b = b + " " + f2;
                 }
             }
 
-        } catch (Exception var14) {
-            log.error("Got an exception getSyn2 query");
-            log.error(var14.getMessage());
+        } catch (Exception e) {
+            fail(e);
         }
 
         return b.trim();
     }
 
-    private static String getMedSyns(String b) {
-        String q = "'";
-        b = b.toLowerCase();
-
-        String tab = "medsyns";
-
-        try (Statement stmt = getConnection().createStatement()) {
-            String f1;
-            String f2;
-
-            String quer = "Select Effect ,MDRTerm from " + tab + " where Effect = " + q + b + q;
-            ResultSet rs = stmt.executeQuery(quer);
-
-            while (rs.next()) {
-                f1 = rs.getString("Effect");
-                if (rs.wasNull()) {
-                    f1 = "";
-                }
-
-                f2 = rs.getString("MDRTerm");
-                if (rs.wasNull()) {
-                    f1 = "";
-                }
-
-                if (b.equalsIgnoreCase(f1)) {
-                    F5.medraFound = true;
-                    return f2;
-                }
+    private String getMedSyns(String b) {
+        var q = "Select MDRTerm from " + TABLE_MEDSYNS + " where Effect = ? limit 1";
+        try (var ps = getConnection().prepareStatement(q)) {
+            ps.setString(1, b);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                meddraFound = true;
+                return rs.getString("MDRTerm");
             }
-
-        } catch (Exception var14) {
-            log.error("Got an exception getMedSyns query");
-            log.error(var14.getMessage());
+        } catch (SQLException e) {
+            fail(e);
         }
-
         return b;
     }
 
-    public static String getLabDirection(String b, String s, String sec, String oriTerm, String md) {
-        if (s == null) {
-            s = "";
-        }
-
-        if (s.length() > 4 && sec.contains("Adverse Reactions")) {
-            boolean isATest = checkMedraTest(b);
+    public String getLabDirection(String b, String s, String sec, String oriTerm, Method md) {
+        if (s == null || (s.length() < 5 && !sec.contains("Adverse Reactions"))) {
+            return "";
+        } else if (isAMeddraTest(b)) {
             boolean increased = false;
             boolean decreased = false;
             boolean abnormal = false;
             String preMed = "";
             String postMed = "";
-            if (isATest) {
-                ++F5.labCounter;
-                s = s.toLowerCase();
-                s = Normals.normalSpl(s);
-                s = Normals.normal2(s);
-                Pattern p;
-                Matcher m;
-                if (md.contains("L")) {
-                    p = Pattern.compile("( increas| eleva| rise| rising| high)");
-                    m = p.matcher(oriTerm);
-                    if (m.find()) {
-                        increased = true;
-                    }
-
-                    p = Pattern.compile("( decreas| lowered| low)");
-                    m = p.matcher(oriTerm);
-                    if (m.find()) {
-                        decreased = true;
-                    }
-
-                    p = Pattern.compile("( abnorm| alter)");
-                    m = p.matcher(oriTerm);
-                    if (m.find()) {
-                        abnormal = true;
-                    }
-                }
-
-                if (s.contains(oriTerm)) {
-                    preMed = s.substring(0, s.indexOf(oriTerm));
-                    preMed = preMed.toLowerCase();
-                    preMed = Normals.normalizeFilter2(preMed);
-                    postMed = s.substring(s.indexOf(oriTerm));
-                    postMed = postMed.toLowerCase();
-                    postMed = Normals.normalizeFilter2(postMed);
-                    String regConj = "( increased| eleva| rise| rising| high | decreas| lowered| low | less)";
-                    Pattern pconj = Pattern.compile(regConj);
-                    Matcher mconj = pconj.matcher(postMed);
-                    if (mconj.find()) {
-                        String matchedConcept = mconj.group();
-                        postMed = postMed.substring(postMed.indexOf(matchedConcept));
-                    }
-                }
-
+            s = s.toLowerCase();
+            s = Normals.normalSpl(s);
+            s = Normals.normal2(s);
+            Pattern p;
+            Matcher m;
+            if (md.toString().contains("L")) {
                 p = Pattern.compile("( increas| eleva| rise| rising| high)");
-                m = p.matcher(preMed);
-                if (m.find()) {
-                    increased = true;
-                }
-
-                p = Pattern.compile("( increas| eleva| rise| rising| high)");
-                m = p.matcher(postMed);
-                if (m.find()) {
-                    increased = true;
-                }
-
-                p = Pattern.compile("( increas| eleva| rise| rising| high)");
-                m = p.matcher(s);
+                m = p.matcher(oriTerm);
                 if (m.find()) {
                     increased = true;
                 }
 
                 p = Pattern.compile("( decreas| lowered| low)");
-                m = p.matcher(s);
+                m = p.matcher(oriTerm);
                 if (m.find()) {
                     decreased = true;
                 }
 
                 p = Pattern.compile("( abnorm| alter)");
-                m = p.matcher(s);
+                m = p.matcher(oriTerm);
                 if (m.find()) {
                     abnormal = true;
                 }
-
-                if (s.contains(" no ") || s.contains(" not ")) {
-                    return "negated";
-                }
-
-                if (increased && !decreased) {
-                    return "increased";
-                }
-
-                if (!increased && decreased) {
-                    return "decreased";
-                }
-
-                if (increased) {
-                    for (int c = 0; c <= F5.maxDefaultLD; ++c) {
-                        if (b.equalsIgnoreCase(F5.defaultLab[c])) {
-                            return F5.defaultDirection[c];
-                        }
-                    }
-                    return "indeterminate";
-                }
-
-                if (abnormal) {
-                    return "abnormal";
-                }
-
-                return "unstated";
             }
-        }
 
+            if (s.contains(oriTerm)) {
+                preMed = s.substring(0, s.indexOf(oriTerm));
+                preMed = preMed.toLowerCase();
+                preMed = Normals.normalizeFilter2(preMed);
+                postMed = s.substring(s.indexOf(oriTerm));
+                postMed = postMed.toLowerCase();
+                postMed = Normals.normalizeFilter2(postMed);
+                String regConj = "( increased| eleva| rise| rising| high | decreas| lowered| low | less)";
+                Pattern pconj = Pattern.compile(regConj);
+                Matcher mconj = pconj.matcher(postMed);
+                if (mconj.find()) {
+                    String matchedConcept = mconj.group();
+                    postMed = postMed.substring(postMed.indexOf(matchedConcept));
+                }
+            }
+
+            p = Pattern.compile("( increas| eleva| rise| rising| high)");
+            m = p.matcher(preMed);
+            if (m.find()) {
+                increased = true;
+            }
+
+            p = Pattern.compile("( increas| eleva| rise| rising| high)");
+            m = p.matcher(postMed);
+            if (m.find()) {
+                increased = true;
+            }
+
+            p = Pattern.compile("( increas| eleva| rise| rising| high)");
+            m = p.matcher(s);
+            if (m.find()) {
+                increased = true;
+            }
+
+            p = Pattern.compile("( decreas| lowered| low)");
+            m = p.matcher(s);
+            if (m.find()) {
+                decreased = true;
+            }
+
+            p = Pattern.compile("( abnorm| alter)");
+            m = p.matcher(s);
+            if (m.find()) {
+                abnormal = true;
+            }
+
+            if (s.contains(" no ") || s.contains(" not ")) {
+                return "negated";
+            }
+
+            if (increased && !decreased) {
+                return "increased";
+            }
+
+            if (!increased && decreased) {
+                return "decreased";
+            }
+
+            if (increased && decreased) {
+                return Reference.defaultLabDirection().getOrDefault(b.toLowerCase(), abnormal ? "abnormal" : "indeterminate");
+            }
+
+            if (abnormal) {
+                return "abnormal";
+            }
+
+            return "unstated";
+        }
         return "";
     }
 
-    private static boolean checkMedraTest(String b) {
-        String q = "'";
-        b = b.toLowerCase();
-        b = b.trim();
 
-        String tab = "medratests";
-
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
-
-
-            quer = "Select Field1 from " + tab + " where Field1 = " + q + b + q;
-            ResultSet rs = stmt.executeQuery(quer);
-            if (rs.next()) {
-                return true;
-            }
-
-        } catch (Exception var11) {
-            log.error("Got an exception check medra test");
-            log.error(var11.getMessage());
+    private boolean isAMeddraTest(String b) {
+        var q = "Select Field1 from " + TABLE_MEDDRATESTS + " where Field1 = ? limit 1";
+        try (var ps = getConnection().prepareStatement(q)) {
+            ps.setString(1, b.trim());
+            ResultSet rs = ps.executeQuery();
+            return rs.next();
+        } catch (Exception e) {
+            fail(e);
         }
-
         return false;
     }
 
-    public static void similarity(String b) {
-        String q = "'";
+    public void similarity(String b) {
         b = b.trim();
         String shortB;
         if (b.length() > 8) {
@@ -544,93 +441,89 @@ public class CleanUp {
             shortB = b;
         }
 
-
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
-
-            quer = "SELECT medra2, stems FROM " + MEDRA_DB_WITHOUT_REVERSE_STEMS + " WHERE medra2 LIKE " + q + "%" + shortB + "%" + q;
-            ResultSet rs = stmt.executeQuery(quer);
+        var q = "SELECT medra2, stems FROM " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " WHERE medra2 LIKE ?";
+        try (var ps = getConnection().prepareStatement(q)) {
+            ps.setString(1, +'%' + shortB + '%');
+            ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                F5.foundMedra = rs.getString("Medra2");
+                foundMeddra = rs.getString("Medra2");
                 if (rs.wasNull()) {
-                    F5.foundMedra = "";
+                    foundMeddra = "";
                 }
 
-                F5.medStem = rs.getString("Stems");
+                medStem = rs.getString("Stems");
                 if (rs.wasNull()) {
-                    F5.medStem = "";
+                    medStem = "";
                 }
 
-                F5.medStem = F5.medStem.toLowerCase();
-                double closenessScore = Similar.compareStrings(b.trim(), F5.foundMedra.trim());
+                medStem = medStem.toLowerCase();
+                double closenessScore = Similar.compareStrings(b.trim(), foundMeddra.trim());
                 if (closenessScore > 0.9D) {
-                    F5.origMethod = F5.finalsMethod[F5.count];
-                    F5.finalsMethod[F5.count] = "MS";
-                    F5.transformFlag = F5.origTerm;
-                    F5.finalMedraTerms[F5.count] = F5.foundMedra;
-                    F5.matchOutcome = "medraMatch";
-                    ++F5.simCounter;
-                    flo.labCheck();
-                    if (F5.labTransformOccurred) {
-                        ++F5.labTransformCounter;
+                    splicer.origMethod = splicer.finalsMethod[splicer.count];
+                    splicer.finalsMethod[splicer.count] = MS;
+                    splicer.transformFlag = splicer.origTerm;
+                    splicer.finalMeddraTerms[splicer.count] = foundMeddra;
+                    splicer.matchedOutcome = true;
+                    splicer.flow.labCheck();
+                    if (splicer.labTransformOccurred) {
+                        ++splicer.labTransformCounter;
                         break;
                     }
 
-                    F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].trim();
-                    flo.finalFilter();
-                    if (F5.passedFinalFilter) {
-                        flo.regularOutput();
+                    splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].trim();
+                    splicer.flow.finalFilter();
+                    if (splicer.passedFinalFilter) {
+                        splicer.flow.regularOutput();
                         break;
                     }
                 }
             }
 
         } catch (Exception e) {
-            log.error("Got an exception getSimilarity query");
-            throw new RuntimeException(e);
+            fail(e);
         }
 
     }
 
-    public static boolean transformLab2Medra(String a, String d) {
+    public boolean transformLab2Medra(String a, String d) {
         if (d.contains("increased")) {
-            F5.medraFound = checkMedra2(a + " increased");
-            if (F5.medraFound) {
+            meddraFound = checkMeddra2(a + " increased");
+            if (meddraFound) {
                 concludeMatchAndOutput();
                 return true;
             }
 
-            F5.medraFound = checkMedra2("blood " + a + " increased");
-            if (F5.medraFound) {
+            meddraFound = checkMeddra2("blood " + a + " increased");
+            if (meddraFound) {
                 concludeMatchAndOutput();
                 return true;
             }
         }
 
         if (d.contains("decreased")) {
-            F5.medraFound = checkMedra2(a + " decreased");
-            if (F5.medraFound) {
+            meddraFound = checkMeddra2(a + " decreased");
+            if (meddraFound) {
                 concludeMatchAndOutput();
                 return true;
             }
 
-            F5.medraFound = checkMedra2("blood " + a + " decreased");
-            if (F5.medraFound) {
+            meddraFound = checkMeddra2("blood " + a + " decreased");
+            if (meddraFound) {
                 concludeMatchAndOutput();
                 return true;
             }
         }
 
         if (d.contains("abnormal")) {
-            F5.medraFound = checkMedra2(a + " abnormal");
-            if (F5.medraFound) {
+            meddraFound = checkMeddra2(a + " abnormal");
+            if (meddraFound) {
                 concludeMatchAndOutput();
                 return true;
             }
 
-            F5.medraFound = checkMedra2("blood " + a + " abnormal");
-            if (F5.medraFound) {
+            meddraFound = checkMeddra2("blood " + a + " abnormal");
+            if (meddraFound) {
                 concludeMatchAndOutput();
                 return true;
             }
@@ -639,78 +532,67 @@ public class CleanUp {
         return false;
     }
 
-    private static void concludeMatchAndOutput() {
-        F5.matchOutcome = "medraMatch";
-        F5.finalsMethod[F5.count] = "LM";
-        F5.transformFlag = F5.origTerm;
-        F5.finalMedraTerms[F5.count] = F5.foundMedra;
-        F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].trim();
-        F5.direction = "transformed";
-        flo.finalFilter();
-        if (F5.passedFinalFilter) {
-            flo.regularOutput();
+    private void concludeMatchAndOutput() {
+        splicer.matchedOutcome = true;
+        splicer.finalsMethod[splicer.count] = LM;
+        splicer.transformFlag = splicer.origTerm;
+        splicer.finalMeddraTerms[splicer.count] = foundMeddra;
+        splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].trim();
+        splicer.direction = "transformed";
+        splicer.flow.finalFilter();
+        if (splicer.passedFinalFilter) {
+            splicer.flow.regularOutput();
         }
 
     }
 
-    private static String falseAde(String b) {
-        if (F5.junkSet.contains(b)) {
-            return "";
-        } else {
-            return b;
-        }
+    private boolean falseAde(String b) {
+        return Reference.junkSet().contains(b);
     }
 
-    public static boolean finalFilter() {
-        Normals.normalizeFilter(F5.finalMedraTerms[F5.count]);
-        String anyLetter = "([a-z]|[A-Z])";
-        Pattern p = Pattern.compile(anyLetter);
-        Matcher m = p.matcher(F5.finalsMethod[F5.count]);
-        boolean mat2 = m.find();
-        if (!mat2) {
+    public boolean finalFilter() {
+        Normals.normalizeFilter(splicer.finalMeddraTerms[splicer.count]);
+        var m = splicer.finalsMethod[splicer.count];
+        if (m == null || m.equals(NONE)) {
             return false;
-        } else if (F5.finalMedraTerms[F5.count].length() <= 2) {
+        } else if (splicer.finalMeddraTerms[splicer.count].length() <= 2) {
             return false;
-        } else if (F5.finalsMethod[F5.count].equals("MS") && F5.msFilterSet.contains(F5.finalMedraTerms[F5.count])) {
+        } else if (splicer.finalsMethod[splicer.count].equals(MS) && Reference.msFilterSet().contains(splicer.finalMeddraTerms[splicer.count])) {
             return false;
-        } else if (F5.finalsMethod[F5.count].equals("L2M") && F5.l2mFilterSet.contains(F5.finalMedraTerms[F5.count])) {
+        } else if (splicer.finalsMethod[splicer.count].equals(L2M) && Reference.l2mFilterSet().contains(splicer.finalMeddraTerms[splicer.count])) {
             return false;
-        } else if (F5.l2mFilterSet.contains(F5.transformFlag)) {
+        } else if (Reference.l2mFilterSet().contains(splicer.transformFlag)) {
             return false;
-        } else if (F5.splFilterSet.contains(F5.finalMedraTerms[F5.count])) {
+        } else if (Reference.splFilterSet().contains(splicer.finalMeddraTerms[splicer.count])) {
             return false;
-        } else {
-            for (int s = 0; s <= F5.maxFilterCon; ++s) {
-                if (F5.finalsMethod[F5.count].contains(F5.filterCon[s])) {
-                    return false;
+        } else if (Reference.filterCon().stream().anyMatch(fc -> splicer.finalsMethod[splicer.count].toString().contains(fc))) {
+            return false;
+        }
+
+        if (splicer.finalsMethod[splicer.count].toString().contains("M") && Integer.parseInt(splicer.sentNumArray[splicer.count]) > -1) {
+
+            String targetSent = splicer.sent[Integer.parseInt(splicer.sentNumArray[splicer.count])];
+            if (targetSent != null && targetSent.contains(splicer.transformFlag)) {
+                String preMed = targetSent.substring(0, targetSent.indexOf(splicer.transformFlag));
+                preMed = preMed.toLowerCase();
+                String[] tempArray = preMed.split(" ");
+                String tempPreMed;
+                if (tempArray.length >= 4) {
+                    tempPreMed = tempArray[tempArray.length - 4] + " " + tempArray[tempArray.length - 3] + " " + tempArray[tempArray.length - 2] + " " + tempArray[tempArray.length - 1];
+                } else {
+                    tempPreMed = preMed;
                 }
+
+                preMed = Normals.normalizeFilter2(tempPreMed);
+                Pattern p4 = Pattern.compile("(?i:patient('s|s)?\\s+((\\()?(\\w+)?(\\s)?(\\=)?\\s?(\\d+)?(\\))?\\s?)?with)");
+                Matcher m4 = p4.matcher(preMed);
+                return !m4.find();
             }
-
-
-            if (F5.finalsMethod[F5.count].contains("M") && Integer.parseInt(F5.sentNumArray[F5.count]) > -1) {
-
-                String targetSent = F5.sent[Integer.parseInt(F5.sentNumArray[F5.count])];
-                if (targetSent != null && targetSent.contains(F5.transformFlag)) {
-                    String preMed = targetSent.substring(0, targetSent.indexOf(F5.transformFlag));
-                    preMed = preMed.toLowerCase();
-                    String[] tempArray = preMed.split(" ");
-                    String tempPreMed;
-                    if (tempArray.length >= 4) {
-                        tempPreMed = tempArray[tempArray.length - 4] + " " + tempArray[tempArray.length - 3] + " " + tempArray[tempArray.length - 2] + " " + tempArray[tempArray.length - 1];
-                    } else {
-                        tempPreMed = preMed;
-                    }
-
-                    preMed = Normals.normalizeFilter2(tempPreMed);
-                    Pattern p4 = Pattern.compile("(?i:patient('s|s)?\\s+((\\()?(\\w+)?(\\s)?(\\=)?\\s?(\\d+)?(\\))?\\s?)?with)");
-                    Matcher m4 = p4.matcher(preMed);
-                    return !m4.find();
-                }
-            }
-
-            return true;
         }
+
+        return true;
     }
+
 
     public boolean cleanIndication(String i) {
         if (i.equalsIgnoreCase(" all ")) {
@@ -722,105 +604,90 @@ public class CleanUp {
         }
     }
 
-    public String mappingProcesses(String ftm, String m) {
-        ftm = falseAde(ftm);
-        if (ftm.equalsIgnoreCase("")) {
-            ++F5.junkCounter;
+    public String mappingProcesses(String ftm, Method method) {
+        if (ftm.isBlank() || falseAde(ftm)) {
             return ftm;
         } else {
-            F5.medraFound = false;
-            F5.matchOutcome = "";
-            if (m == null) {
-                m = "";
+            meddraFound = false;
+            splicer.matchedOutcome = null;
+            if (method == null) {
+                method = NONE;
             }
 
-            boolean isIndication = nde.checkIndication(ftm);
+            boolean isIndication = splicer.indicationArray.contains(ftm);
             if (isIndication) {
-                ++F5.indCounter;
                 return "";
-            } else if (!m.equals("M1") && !m.equals("T1M1")) {
-                ftm = checkJunk(ftm);
-                if (ftm.equalsIgnoreCase("")) {
-                    ++F5.junkCounter;
-                    return ftm;
+            } else if (!method.equals(M1) && !method.equals(T1M1)) {
+                if (isJunk(ftm)) {
+                    return "";
                 } else {
-                    F5.medraFound = checkMedra2(ftm);
-                    if (F5.medraFound) {
-                        ++F5.straightCounter;
-                        F5.matchOutcome = "medraMatch";
-                        return F5.foundMedra;
+                    meddraFound = checkMeddra2(ftm);
+                    if (meddraFound) {
+                        splicer.matchedOutcome = true;
+                        return foundMeddra;
                     } else {
-                        F5.medraFound = this.checkOR(ftm);
-                        if (F5.medraFound) {
+                        meddraFound = this.checkOR(ftm);
+                        if (meddraFound) {
                             log.debug("I CHECKED ORs and it was TRUE!");
-                            ++F5.straightCounter;
-                            F5.matchOutcome = "medraMatch";
-                            return F5.foundMedra;
+                            splicer.matchedOutcome = true;
+                            return foundMeddra;
                         } else {
                             ftm = getMedSyns(ftm);
-                            if (F5.medraFound) {
-                                ++F5.synCounter;
-                                F5.matchOutcome = "medraMatch";
+                            if (meddraFound) {
+                                splicer.matchedOutcome = true;
                                 return ftm;
                             } else {
                                 String workingTerm = ftm.trim();
                                 tempArray = workingTerm.split(" ");
                                 StringBuilder allWords = new StringBuilder();
-
                                 for (String s : tempArray) {
-                                    boolean isStopWord = F5.stopSet.contains(s);
+                                    boolean isStopWord = Reference.stopSet().contains(s);
                                     if (!isStopWord) {
-                                        String stemmedWord = F5.portStem(s);
+                                        String stemmedWord = PorterStemmer.portStem(s);
                                         if (stemmedWord.equalsIgnoreCase("Invalid term")) {
                                             stemmedWord = s;
                                         }
-
                                         allWords.append(" ").append(stemmedWord);
                                     }
                                 }
 
                                 allWords = new StringBuilder(allWords.toString().trim());
                                 allWords.insert(0, " ");
-                                if (!allWords.toString().equalsIgnoreCase(" ")) {
-                                    F5.medraFound = checkMedra(allWords.toString());
+                                if (!allWords.toString().equals(" ")) {
+                                    meddraFound = checkMeddra(allWords.toString());
                                 }
 
-                                if (F5.medraFound) {
-                                    ++F5.stemMedCounter;
-                                    F5.matchOutcome = "medraMatch";
-                                    return F5.foundMedra;
+                                if (meddraFound) {
+                                    splicer.matchedOutcome = true;
+                                    return foundMeddra;
                                 } else {
-                                    ftm = this.cleanConvert(ftm);
-                                    if (ftm.equalsIgnoreCase("")) {
+                                    ftm = cleanConvert(ftm);
+                                    if (ftm.isBlank()) {
                                         return ftm;
                                     } else {
-                                        F5.medraFound = checkMedra2(ftm);
-                                        if (F5.medraFound) {
-                                            ++F5.transformCounter;
-                                            F5.matchOutcome = "medraMatch";
-                                            return F5.foundMedra;
+                                        meddraFound = checkMeddra2(ftm);
+                                        if (meddraFound) {
+                                            splicer.matchedOutcome = true;
+                                            return foundMeddra;
                                         } else {
                                             if (!allWords.toString().equalsIgnoreCase(" ")) {
-                                                F5.medraFound = checkMedraToken(allWords.toString());
+                                                meddraFound = checkMeddraToken(allWords.toString());
                                             }
 
-                                            if (F5.medraFound) {
-                                                ++F5.tokenMedCounter;
-                                                F5.matchOutcome = "medraMatch";
-                                                return F5.foundMedra;
+                                            if (meddraFound) {
+                                                splicer.matchedOutcome = true;
+                                                return foundMeddra;
                                             } else {
                                                 if (!allWords.toString().equalsIgnoreCase(" ")) {
-                                                    F5.medraFound = checkSynToken(allWords.toString());
+                                                    meddraFound = checkSynToken(allWords.toString());
                                                 }
 
-                                                if (F5.medraFound) {
-                                                    ++F5.tokenSynCounter;
-                                                    F5.matchOutcome = "medraMatch";
-                                                    return F5.foundMedra;
+                                                if (meddraFound) {
+                                                    splicer.matchedOutcome = true;
+                                                    return foundMeddra;
                                                 } else {
-                                                    F5.matchOutcome = "noMatch";
-                                                    ++F5.noMatch1Counter;
-                                                    ftm = F5.compress(ftm);
+                                                    splicer.matchedOutcome = false;
+                                                    ftm = Normals.compress(ftm);
                                                     ftm = ftm.trim();
                                                     return ftm;
                                                 }
@@ -833,8 +700,7 @@ public class CleanUp {
                     }
                 }
             } else {
-                ++F5.m1Counter;
-                F5.matchOutcome = "medraMatch";
+                splicer.matchedOutcome = true;
                 return ftm;
             }
         }
@@ -842,43 +708,42 @@ public class CleanUp {
 
     public String cleanTermEscape(String ftm) {
 
-        F5.escapeMatchOccurred = false;
-        F5.medraCount = 0;
-        AdeProcess.getMedraTermsEscape2(ftm);
-        ade.findMatch(F5.origTerm2);
-        ade.getUniqueLCSEscape();
+        splicer.escapeMatchOccurred = false;
+        splicer.meddraCount = 0;
+        splicer.adeProcess.getMeddraTermsEscape2(ftm);
+        splicer.adeProcess.findMatch(splicer.origTerm2);
+        splicer.adeProcess.getUniqueLCSEscape();
 
-        for (int escapeCount = 0; escapeCount < F5.goodCount; ++escapeCount) {
-            log.debug(F5.goodWords2[escapeCount]);
+        for (int escapeCount = 0; escapeCount < splicer.goodCount; ++escapeCount) {
+            log.debug(splicer.goodWords2[escapeCount]);
 
-            F5.origMethod = F5.finalsMethod[F5.count];
-            F5.finalsMethod[F5.count] = "L2M";
-            F5.transformFlag = F5.origTerm;
-            F5.finalMedraTerms[F5.count] = F5.goodWords2[escapeCount];
-            F5.matchOutcome = "medraMatch";
-            ++F5.l2mCounter;
-            flo.labCheck();
-            if (F5.labTransformOccurred) {
-                ++F5.labTransformCounter;
+            splicer.origMethod = splicer.finalsMethod[splicer.count];
+            splicer.finalsMethod[splicer.count] = L2M;
+            splicer.transformFlag = splicer.origTerm;
+            splicer.finalMeddraTerms[splicer.count] = splicer.goodWords2[escapeCount];
+            splicer.matchedOutcome = true;
+            splicer.flow.labCheck();
+            if (splicer.labTransformOccurred) {
+                ++splicer.labTransformCounter;
             }
 
-            if (!F5.labTransformOccurred) {
-                flo.finalFilter();
-                if (F5.passedFinalFilter) {
-                    flo.regularOutput();
+            if (!splicer.labTransformOccurred) {
+                splicer.flow.finalFilter();
+                if (splicer.passedFinalFilter) {
+                    splicer.flow.regularOutput();
                 }
             } else {
-                F5.escapeMatchOccurred = true;
+                splicer.escapeMatchOccurred = true;
             }
         }
 
-        ftm = F5.compress(ftm);
+        ftm = Normals.compress(ftm);
         ftm = ftm.trim();
         return ftm;
     }
 
     private boolean checkOR(String f) {
-        F5.escapeMatchOccurred = false;
+        splicer.escapeMatchOccurred = false;
         if (f.contains(" or ")) {
             tempArray = f.trim().split(" ");
             String phrase1;
@@ -887,101 +752,83 @@ public class CleanUp {
             if (tempArray.length == 4 && tempArray[2].equalsIgnoreCase("or")) {
                 phrase1 = tempArray[0] + " " + tempArray[1];
                 phrase2 = tempArray[0] + " " + tempArray[3];
-                phraseFound = checkMedra2(phrase1);
+                phraseFound = checkMeddra2(phrase1);
                 if (phraseFound) {
-                    F5.escapeMatchOccurred = true;
-                    F5.transformFlag = f;
-                    F5.finalMedraTerms[F5.count] = phrase1;
-                    F5.matchOutcome = "medraMatch";
-                    flo.regularOutput();
+                    splicer.escapeMatchOccurred = true;
+                    splicer.transformFlag = f;
+                    splicer.finalMeddraTerms[splicer.count] = phrase1;
+                    splicer.matchedOutcome = true;
+                    splicer.flow.regularOutput();
                 }
 
-                phraseFound = checkMedra2(phrase2);
+                phraseFound = checkMeddra2(phrase2);
                 if (phraseFound) {
-                    F5.escapeMatchOccurred = true;
-                    F5.finalMedraTerms[F5.count] = phrase2;
-                    F5.transformFlag = f;
-                    F5.matchOutcome = "medraMatch";
-                    flo.regularOutput();
+                    splicer.escapeMatchOccurred = true;
+                    splicer.finalMeddraTerms[splicer.count] = phrase2;
+                    splicer.transformFlag = f;
+                    splicer.matchedOutcome = true;
+                    splicer.flow.regularOutput();
                 }
             } else if (tempArray.length == 4 && tempArray[1].equalsIgnoreCase("or")) {
                 phrase1 = tempArray[0] + " " + tempArray[3];
                 phrase2 = tempArray[2] + " " + tempArray[3];
-                phraseFound = checkMedra2(phrase1);
+                phraseFound = checkMeddra2(phrase1);
                 if (phraseFound) {
-                    F5.escapeMatchOccurred = true;
-                    F5.transformFlag = f;
-                    F5.matchOutcome = "medraMatch";
-                    F5.finalMedraTerms[F5.count] = phrase1;
-                    flo.regularOutput();
+                    splicer.escapeMatchOccurred = true;
+                    splicer.transformFlag = f;
+                    splicer.matchedOutcome = true;
+                    splicer.finalMeddraTerms[splicer.count] = phrase1;
+                    splicer.flow.regularOutput();
                 }
 
-                phraseFound = checkMedra2(phrase2);
+                phraseFound = checkMeddra2(phrase2);
                 if (phraseFound) {
-                    F5.escapeMatchOccurred = true;
-                    F5.transformFlag = f;
-                    F5.finalMedraTerms[F5.count] = phrase2;
-                    F5.matchOutcome = "medraMatch";
-                    flo.regularOutput();
+                    splicer.escapeMatchOccurred = true;
+                    splicer.transformFlag = f;
+                    splicer.finalMeddraTerms[splicer.count] = phrase2;
+                    splicer.matchedOutcome = true;
+                    splicer.flow.regularOutput();
                 }
             }
         }
 
-        return F5.escapeMatchOccurred;
+        return splicer.escapeMatchOccurred;
     }
 
     private String clean1(String f) {
-        for (int j = 0; j < F5.maxClean1; ++j) {
-            if (f.endsWith(F5.clean1[j])) {
-                f = f.replaceAll(F5.clean1[j], "");
+        for (String c : Reference.clean1()) {
+            if (f.endsWith(c)) {
+                f = f.replace(c, "");
             }
         }
-
-        f = F5.compress(f);
-        f = f.trim();
-        return f;
+        return Normals.compress(f).trim();
     }
 
     private String clean2(String f) {
-        for (int j = 0; j < F5.maxClean2; ++j) {
-            if (f.startsWith(F5.clean2[j])) {
-                f = f.replaceFirst(F5.clean2[j], "");
+        for (String c : Reference.clean2()) {
+            if (f.startsWith(c)) {
+                f = f.replaceFirst(c, "");
             }
         }
-
-        f = F5.compress(f);
-        f = f.trim();
-        return f;
+        return Normals.compress(f).trim();
     }
 
     private String clean3(String f) {
-        for (int j = 0; j < F5.maxClean3; ++j) {
-            if (f.equalsIgnoreCase(F5.clean3[j])) {
-                f = "";
-                break;
-            }
+        if (Reference.clean3().contains(f.toLowerCase())) {
+            return "";
         }
-
-        f = F5.compress(f);
-        f = f.trim();
-        return f;
+        f = Normals.compress(f);
+        return f.trim();
     }
 
     private String cleanConvert(String ft) {
-        ft = this.clean1(" " + ft + " ");
-        ft = this.clean2(" " + ft + " ");
-        ft = this.clean3(ft);
+        ft = clean1(" " + ft + " ");
+        ft = clean2(" " + ft + " ");
+        ft = clean3(ft);
         ft = getSyn1(ft);
         ft = getSwit(ft);
-        ft = getSyn2(ft);
-        return ft;
+        return getSyn2(ft);
     }
 
-    public String finalTransform(String fm) {
-        if (fm.equalsIgnoreCase("alte")) {
-            return "SGPT increased";
-        } else {
-            return fm.equalsIgnoreCase("fatigueability") ? "fatigue" : fm;
-        }
-    }
+
 }

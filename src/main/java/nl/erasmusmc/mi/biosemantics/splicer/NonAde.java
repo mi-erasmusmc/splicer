@@ -5,23 +5,31 @@ import org.apache.logging.log4j.Logger;
 
 public class NonAde {
     private static final Logger log = LogManager.getLogger();
-    static AdeProcess ade = new AdeProcess();
+    public static final String ACTIVE_MOIETY = "<activeMoiety>";
+    public static final String NAME_TAG_OPEN = "<name";
+    public static final String NAME_TAG_CLOSE = "</name";
+    public static final String PREGNANCY_CATEGORY = "PREGNANCY CATEGORY";
+    public static final String CATEGORY = "Category";
+    private String shortGenDrugName = "";
+
+    private final Splicer splicer;
 
 
-    public NonAde() {
+    public NonAde(Splicer splicer) {
+        this.splicer = splicer;
     }
 
     public void getGenName(String adi) {
-        F5.shortGenDrugName = "";
+        shortGenDrugName = "";
         String tempAdi;
-        if (adi.contains("<activeMoiety>")) {
-            tempAdi = adi.substring(adi.indexOf("<activeMoiety>"));
-            if (tempAdi.contains("<name") && tempAdi.indexOf("<name") < tempAdi.indexOf("</name")) {
-                tempAdi = tempAdi.substring(tempAdi.indexOf("<name"), tempAdi.indexOf("</name"));
+        if (adi.contains(ACTIVE_MOIETY)) {
+            tempAdi = adi.substring(adi.indexOf(ACTIVE_MOIETY));
+            if (tempAdi.contains(NAME_TAG_OPEN) && tempAdi.indexOf(NAME_TAG_OPEN) < tempAdi.indexOf(NAME_TAG_CLOSE)) {
+                tempAdi = tempAdi.substring(tempAdi.indexOf(NAME_TAG_OPEN), tempAdi.indexOf(NAME_TAG_CLOSE));
             }
 
-            tempAdi = tempAdi.replace("<name", "");
-            tempAdi = tempAdi.replace("<activeMoiety>", "");
+            tempAdi = tempAdi.replace(NAME_TAG_OPEN, "");
+            tempAdi = tempAdi.replace(ACTIVE_MOIETY, "");
             tempAdi = tempAdi.replace(">", "");
             if (tempAdi.contains("/")) {
                 tempAdi = tempAdi.substring(0, tempAdi.indexOf("/"));
@@ -34,19 +42,19 @@ public class NonAde {
                 tempAdi = tempAdi.substring(0, 30);
             }
 
-            F5.genDrugName = tempAdi;
-            F5.genDrugName = F5.genDrugName.toLowerCase();
-            if (F5.genDrugName.contains(" ")) {
-                F5.shortGenDrugName = F5.genDrugName.substring(0, F5.genDrugName.indexOf(" "));
-                F5.shortGenDrugName = F5.shortGenDrugName.trim();
+            splicer.genDrugName = tempAdi;
+            splicer.genDrugName = splicer.genDrugName.toLowerCase();
+            if (splicer.genDrugName.contains(" ")) {
+                shortGenDrugName = splicer.genDrugName.substring(0, splicer.genDrugName.indexOf(" "));
+                shortGenDrugName = shortGenDrugName.trim();
             }
         } else if (adi.contains("<genericMedicine>")) {
             tempAdi = adi.substring(adi.indexOf("<genericMedicine>"));
-            if (tempAdi.contains("<name") && tempAdi.indexOf("<name") < tempAdi.indexOf("</name")) {
-                tempAdi = tempAdi.substring(tempAdi.indexOf("<name"), tempAdi.indexOf("</name"));
+            if (tempAdi.contains(NAME_TAG_OPEN) && tempAdi.indexOf(NAME_TAG_OPEN) < tempAdi.indexOf(NAME_TAG_CLOSE)) {
+                tempAdi = tempAdi.substring(tempAdi.indexOf(NAME_TAG_OPEN), tempAdi.indexOf(NAME_TAG_CLOSE));
             }
 
-            tempAdi = tempAdi.replace("<name", "");
+            tempAdi = tempAdi.replace(NAME_TAG_OPEN, "");
             tempAdi = tempAdi.replace(">", "");
             if (tempAdi.contains("/")) {
                 tempAdi = tempAdi.substring(0, tempAdi.indexOf("/"));
@@ -60,19 +68,19 @@ public class NonAde {
                 tempAdi = tempAdi.substring(0, 30);
             }
 
-            F5.genDrugName = tempAdi;
-            F5.genDrugName = F5.genDrugName.toLowerCase();
-            if (F5.genDrugName.contains(" ")) {
-                F5.shortGenDrugName = F5.genDrugName.substring(0, F5.genDrugName.indexOf(" "));
-                F5.shortGenDrugName = F5.shortGenDrugName.trim();
+            splicer.genDrugName = tempAdi;
+            splicer.genDrugName = splicer.genDrugName.toLowerCase();
+            if (splicer.genDrugName.contains(" ")) {
+                shortGenDrugName = splicer.genDrugName.substring(0, splicer.genDrugName.indexOf(" "));
+                shortGenDrugName = shortGenDrugName.trim();
             }
         } else {
-            F5.genDrugName = "";
+            splicer.genDrugName = "";
         }
 
-        F5.genDrugName = Normals.normalDrugName(F5.genDrugName);
-        F5.shortGenDrugName = Normals.normalDrugName(F5.shortGenDrugName);
-        F5.genDrugName = F5.genDrugName.trim();
+        splicer.genDrugName = Normals.normalDrugName(splicer.genDrugName);
+        shortGenDrugName = Normals.normalDrugName(shortGenDrugName);
+        splicer.genDrugName = splicer.genDrugName.trim();
     }
 
 
@@ -80,44 +88,44 @@ public class NonAde {
         String tempAdi;
         if (adi.contains("<manufacturedMedicine>")) {
             tempAdi = adi.substring(adi.indexOf("<manufacturedMedicine>"));
-            if (tempAdi.contains("<name") && tempAdi.indexOf("<name") < tempAdi.indexOf("</name")) {
-                tempAdi = tempAdi.substring(tempAdi.indexOf("<name"), tempAdi.indexOf("</name"));
+            if (tempAdi.contains(NAME_TAG_OPEN) && tempAdi.indexOf(NAME_TAG_OPEN) < tempAdi.indexOf(NAME_TAG_CLOSE)) {
+                tempAdi = tempAdi.substring(tempAdi.indexOf(NAME_TAG_OPEN), tempAdi.indexOf(NAME_TAG_CLOSE));
             }
 
-            tempAdi = tempAdi.replace("<name", "");
+            tempAdi = tempAdi.replace(NAME_TAG_OPEN, "");
             tempAdi = tempAdi.replace(">", "");
-            F5.tradeDrugName = tempAdi.toLowerCase();
+            splicer.tradeDrugName = tempAdi.toLowerCase();
         } else if (adi.contains("<manufacturedProduct>")) {
             tempAdi = adi.substring(adi.indexOf("<manufacturedProduct>"));
-            if (tempAdi.contains("<name") && tempAdi.indexOf("<name") < tempAdi.indexOf("</name")) {
-                tempAdi = tempAdi.substring(tempAdi.indexOf("<name"), tempAdi.indexOf("</name"));
-            } else if (tempAdi.contains("<name")) {
-                tempAdi = tempAdi.substring(tempAdi.indexOf("<name"));
+            if (tempAdi.contains(NAME_TAG_OPEN) && tempAdi.indexOf(NAME_TAG_OPEN) < tempAdi.indexOf(NAME_TAG_CLOSE)) {
+                tempAdi = tempAdi.substring(tempAdi.indexOf(NAME_TAG_OPEN), tempAdi.indexOf(NAME_TAG_CLOSE));
+            } else if (tempAdi.contains(NAME_TAG_OPEN)) {
+                tempAdi = tempAdi.substring(tempAdi.indexOf(NAME_TAG_OPEN));
             }
 
-            tempAdi = tempAdi.replace("<name", "");
+            tempAdi = tempAdi.replace(NAME_TAG_OPEN, "");
             tempAdi = tempAdi.replace("<suffix>", " ");
             tempAdi = tempAdi.replace("</suffix>", "");
             tempAdi = tempAdi.replace("<suffix/", "");
             tempAdi = tempAdi.replace("\"", "");
             tempAdi = tempAdi.replace(">", "");
-            F5.tradeDrugName = tempAdi.toLowerCase();
+            splicer.tradeDrugName = tempAdi.toLowerCase();
         } else {
-            F5.tradeDrugName = "";
+            splicer.tradeDrugName = "";
         }
 
-        F5.tradeDrugName = Normals.normalDrugName(F5.tradeDrugName);
+        splicer.tradeDrugName = Normals.normalDrugName(splicer.tradeDrugName);
     }
 
     public void getActiveMoiety(String adi) {
-        F5.shortGenDrugName = "";
-        if (adi.contains("<activeMoiety>")) {
-            String tempAdi = adi.substring(adi.indexOf("<activeMoiety>"));
-            if (tempAdi.contains("<name") && tempAdi.indexOf("<name") < tempAdi.indexOf("</name")) {
-                tempAdi = tempAdi.substring(tempAdi.indexOf("<name"), tempAdi.indexOf("</name"));
+        shortGenDrugName = "";
+        if (adi.contains(ACTIVE_MOIETY)) {
+            String tempAdi = adi.substring(adi.indexOf(ACTIVE_MOIETY));
+            if (tempAdi.contains(NAME_TAG_OPEN) && tempAdi.indexOf(NAME_TAG_OPEN) < tempAdi.indexOf(NAME_TAG_CLOSE)) {
+                tempAdi = tempAdi.substring(tempAdi.indexOf(NAME_TAG_OPEN), tempAdi.indexOf(NAME_TAG_CLOSE));
             }
 
-            tempAdi = tempAdi.replace("<name", "");
+            tempAdi = tempAdi.replace(NAME_TAG_OPEN, "");
             tempAdi = tempAdi.replace(">", "");
             if (tempAdi.contains("/")) {
                 tempAdi = tempAdi.substring(0, tempAdi.indexOf("/"));
@@ -130,13 +138,13 @@ public class NonAde {
                 tempAdi = tempAdi.substring(0, 30);
             }
 
-            F5.activeMoietyName = tempAdi;
-            F5.activeMoietyName = F5.activeMoietyName.toLowerCase();
+            splicer.activeMoietyName = tempAdi;
+            splicer.activeMoietyName = splicer.activeMoietyName.toLowerCase();
         } else {
-            F5.activeMoietyName = "";
+            splicer.activeMoietyName = "";
         }
 
-        F5.activeMoietyName = Normals.normalDrugName(F5.activeMoietyName);
+        splicer.activeMoietyName = Normals.normalDrugName(splicer.activeMoietyName);
     }
 
     public void getPregCat(String pc) {
@@ -166,8 +174,8 @@ public class NonAde {
             } else if (tempPc.contains("<")) {
                 tempPc = tempPc.substring(0, tempPc.indexOf("<"));
             }
-        } else if (pc.contains("PREGNANCY CATEGORY")) {
-            tempPc = pc.substring(pc.indexOf("PREGNANCY CATEGORY"));
+        } else if (pc.contains(PREGNANCY_CATEGORY)) {
+            tempPc = pc.substring(pc.indexOf(PREGNANCY_CATEGORY));
             if (tempPc.contains("(")) {
                 tempPc = tempPc.substring(0, tempPc.indexOf("("));
             } else if (tempPc.contains("<")) {
@@ -175,25 +183,25 @@ public class NonAde {
             }
         } else if (pc.contains("Teratogenic Effects")) {
             tempPc = pc.substring(pc.indexOf("Teratogenic Effects"));
-            if (tempPc.contains("Category")) {
-                tempPc = tempPc.substring(tempPc.indexOf("Category"));
+            if (tempPc.contains(CATEGORY)) {
+                tempPc = tempPc.substring(tempPc.indexOf(CATEGORY));
                 if (tempPc.contains("<")) {
                     tempPc = tempPc.substring(0, tempPc.indexOf("<"));
                 }
 
-                tempPc = tempPc.replace("Category", "");
+                tempPc = tempPc.replace(CATEGORY, "");
             } else if (tempPc.contains("<")) {
                 tempPc = tempPc.substring(0, tempPc.indexOf("<"));
             }
         } else if (pc.contains("Teratogenic effects")) {
             tempPc = pc.substring(pc.indexOf("Teratogenic effects"));
-            if (tempPc.contains("Category")) {
-                tempPc = tempPc.substring(tempPc.indexOf("Category"));
+            if (tempPc.contains(CATEGORY)) {
+                tempPc = tempPc.substring(tempPc.indexOf(CATEGORY));
                 if (tempPc.contains("<")) {
                     tempPc = tempPc.substring(0, tempPc.indexOf("<"));
                 }
 
-                tempPc = tempPc.replace("Category", "");
+                tempPc = tempPc.replace(CATEGORY, "");
             } else if (tempPc.contains("<")) {
                 tempPc = tempPc.substring(0, tempPc.indexOf("<"));
             }
@@ -218,7 +226,7 @@ public class NonAde {
         tempPc = tempPc.replaceAll("(?i)Pregnancy Category", "");
         tempPc = tempPc.replaceAll("(?i)Teratogenic Effects Category", "");
         tempPc = tempPc.replaceAll("(?i)Pregnancy Categories", "");
-        tempPc = tempPc.replaceAll("PREGNANCY CATEGORY", "");
+        tempPc = tempPc.replace(PREGNANCY_CATEGORY, "");
         tempPc = tempPc.replaceAll("(?i)Teratogenic Effects", "");
         tempPc = tempPc.replaceAll("(?i)category", "");
         tempPc = tempPc.replaceAll("(?i)categories", "");
@@ -239,26 +247,13 @@ public class NonAde {
             tempPc = tempPc.substring(0, 1);
         }
 
-        F5.pregCat = tempPc;
+        splicer.pregCat = tempPc;
     }
 
     public void getIndication(String ai) {
         String indBlob = Normals.normal2(ai);
-        AdeProcess.getMedraTermsIndications(indBlob);
-        ade.getUniqueLCS2();
-    }
-
-    public boolean checkIndication(String ta) {
-        boolean wasFound = false;
-        if (F5.maxIndCount > -1) {
-            for (int i = 0; i <= F5.maxIndCount; ++i) {
-                if (F5.indicationArray[i].equalsIgnoreCase(ta)) {
-                    wasFound = true;
-                    break;
-                }
-            }
-        }
-        return wasFound;
+        splicer.adeProcess.getMeddraTermsIndications(indBlob);
+        splicer.adeProcess.getUniqueLCS2();
     }
 
 }

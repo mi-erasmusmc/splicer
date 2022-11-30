@@ -7,45 +7,52 @@ import java.util.regex.Pattern;
 
 public class Numbers {
 
+    private final Splicer splicer;
+    private String runningFreq = "";
 
-    public static void findFrequencies() {
-        int numPercents = StringUtils.countMatches(F5.currentSentence, "%");
+
+    public Numbers(Splicer splicer) {
+        this.splicer = splicer;
+    }
+
+    public void findFrequencies() {
+        int numPercents = StringUtils.countMatches(splicer.currentSentence, "%");
         if (numPercents == 0) {
-            if (F5.italicsFlag && !F5.origSent.contains(":")) {
+            if (splicer.italicsFlag && !splicer.origSent.contains(":")) {
                 italicsFreqs();
             } else {
-                textFreqs(F5.origSent);
+                textFreqs(splicer.origSent);
             }
         }
 
         if (numPercents == 1) {
             Pattern p = Pattern.compile("\\>?\\s?\\=?\\s?([0-9]+)?\\s?\\.?\\s?([0-9]+)?\\.?([0-9]+)?(\\s+)?%");
-            Matcher m = p.matcher(F5.currentSentence);
+            Matcher m = p.matcher(splicer.currentSentence);
 
             while (m.find()) {
                 String tempFreq = m.group();
                 tempFreq = tempFreq.replace("%", "");
                 tempFreq = tempFreq.replace(" ", "");
-                tempFreq = F5.compress(tempFreq);
+                tempFreq = Normals.compress(tempFreq);
                 tempFreq = tempFreq.trim();
-                PostProcess.putIntoFinals(tempFreq);
+                splicer.postProcess.putIntoFinals(tempFreq);
             }
         }
 
         if (numPercents >= 2) {
-            String lowerCaseSent = F5.currentSentence.toLowerCase();
-            F5.skipSent = true;
-            F5.skipSent = determineDrugOrderText(lowerCaseSent);
+            String lowerCaseSent = splicer.currentSentence.toLowerCase();
+            boolean skipSent = true;
+            skipSent = determineDrugOrderText(lowerCaseSent);
             Matcher m;
             int perCount;
             String tempFreq;
             String ade;
             Pattern p;
-            if (!F5.skipSent) {
-                for (F5.count = 0; F5.count < F5.goodCount; ++F5.count) {
+            if (!skipSent) {
+                for (splicer.count = 0; splicer.count < splicer.goodCount; ++splicer.count) {
 
-                    if (lowerCaseSent.contains(F5.goodWords2[F5.count])) {
-                        ade = lowerCaseSent.substring(lowerCaseSent.indexOf(F5.goodWords2[F5.count]));
+                    if (lowerCaseSent.contains(splicer.goodWords2[splicer.count])) {
+                        ade = lowerCaseSent.substring(lowerCaseSent.indexOf(splicer.goodWords2[splicer.count]));
                     } else {
                         ade = lowerCaseSent;
                     }
@@ -56,36 +63,36 @@ public class Numbers {
 
                     while (m.find()) {
                         ++perCount;
-                        if (F5.drugFirst && perCount == 1) {
+                        if (splicer.drugFirst && perCount == 1) {
                             tempFreq = m.group();
                             tempFreq = tempFreq.replace("%", "");
                             tempFreq = tempFreq.replace(" ", "");
-                            tempFreq = F5.compress(tempFreq);
+                            tempFreq = Normals.compress(tempFreq);
                             tempFreq = tempFreq.trim();
-                            PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", tempFreq, "0", "0", "0");
+                            splicer.postProcess.placeIntoFinal(splicer.goodWords2[splicer.count], splicer.sMethod[splicer.count], splicer.sSection[splicer.count], splicer.countSentences + "", tempFreq, "0", "0", "0");
                             break;
                         }
 
-                        if (!F5.drugFirst && perCount == 2) {
+                        if (!splicer.drugFirst && perCount == 2) {
                             tempFreq = m.group();
                             tempFreq = tempFreq.replace("%", "");
                             tempFreq = tempFreq.replace(" ", "");
-                            tempFreq = F5.compress(tempFreq);
+                            tempFreq = Normals.compress(tempFreq);
                             tempFreq = tempFreq.trim();
-                            PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", tempFreq, "0", "0", "0");
+                            splicer.postProcess.placeIntoFinal(splicer.goodWords2[splicer.count], splicer.sMethod[splicer.count], splicer.sSection[splicer.count], splicer.countSentences + "", tempFreq, "0", "0", "0");
                             break;
                         }
                     }
 
-                    if (perCount == 0 && F5.sMethod[F5.count].contains("M1")) {
-                        PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", "unk", "0", "0", "0");
+                    if (perCount == 0 && splicer.sMethod[splicer.count].toString().contains("M1")) {
+                        splicer.postProcess.placeIntoFinal(splicer.goodWords2[splicer.count], splicer.sMethod[splicer.count], splicer.sSection[splicer.count], splicer.countSentences + "", "unk", "0", "0", "0");
                     }
                 }
             } else {
-                for (F5.count = 0; F5.count < F5.goodCount; ++F5.count) {
+                for (splicer.count = 0; splicer.count < splicer.goodCount; ++splicer.count) {
 
-                    if (lowerCaseSent.contains(F5.goodWords2[F5.count])) {
-                        ade = lowerCaseSent.substring(lowerCaseSent.indexOf(F5.goodWords2[F5.count]));
+                    if (lowerCaseSent.contains(splicer.goodWords2[splicer.count])) {
+                        ade = lowerCaseSent.substring(lowerCaseSent.indexOf(splicer.goodWords2[splicer.count]));
                     } else {
                         ade = "";
                     }
@@ -100,12 +107,12 @@ public class Numbers {
                         tempFreq = tempFreq.replace("%", "");
                         tempFreq = tempFreq.replace(" ", "");
                         tempFreq = tempFreq.trim();
-                        PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", tempFreq, "0", "0", "0");
+                        splicer.postProcess.placeIntoFinal(splicer.goodWords2[splicer.count], splicer.sMethod[splicer.count], splicer.sSection[splicer.count], splicer.countSentences + "", tempFreq, "0", "0", "0");
                         break;
                     }
 
                     if (perCount == 0) {
-                        PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", "unk", "0", "0", "0");
+                        splicer.postProcess.placeIntoFinal(splicer.goodWords2[splicer.count], splicer.sMethod[splicer.count], splicer.sSection[splicer.count], splicer.countSentences + "", "unk", "0", "0", "0");
                     }
                 }
             }
@@ -113,46 +120,46 @@ public class Numbers {
 
     }
 
-    public static boolean determineDrugOrderText(String wt) {
+    public boolean determineDrugOrderText(String wt) {
         boolean st = true;
-        if (wt.contains(F5.genDrugName)) {
+        if (wt.contains(splicer.genDrugName)) {
             if (wt.contains("placebo")) {
                 st = false;
-                if (wt.indexOf(F5.genDrugName) < wt.indexOf("placebo")) {
-                    F5.drugFirst = true;
+                if (wt.indexOf(splicer.genDrugName) < wt.indexOf("placebo")) {
+                    splicer.drugFirst = true;
                 }
 
-                if (wt.indexOf(F5.genDrugName) > wt.indexOf("placebo")) {
-                    F5.drugFirst = false;
+                if (wt.indexOf(splicer.genDrugName) > wt.indexOf("placebo")) {
+                    splicer.drugFirst = false;
                 }
             } else if (wt.contains("comparator")) {
                 st = false;
-                if (wt.indexOf(F5.genDrugName) < wt.indexOf("comparator")) {
-                    F5.drugFirst = true;
+                if (wt.indexOf(splicer.genDrugName) < wt.indexOf("comparator")) {
+                    splicer.drugFirst = true;
                 }
 
-                if (wt.indexOf(F5.genDrugName) > wt.indexOf("comparator")) {
-                    F5.drugFirst = false;
+                if (wt.indexOf(splicer.genDrugName) > wt.indexOf("comparator")) {
+                    splicer.drugFirst = false;
                 }
             }
-        } else if (wt.contains(F5.tradeDrugName)) {
+        } else if (wt.contains(splicer.tradeDrugName)) {
             if (wt.contains("placebo")) {
                 st = false;
-                if (wt.indexOf(F5.tradeDrugName) < wt.indexOf("placebo")) {
-                    F5.drugFirst = true;
+                if (wt.indexOf(splicer.tradeDrugName) < wt.indexOf("placebo")) {
+                    splicer.drugFirst = true;
                 }
 
-                if (wt.indexOf(F5.tradeDrugName) > wt.indexOf("placebo")) {
-                    F5.drugFirst = false;
+                if (wt.indexOf(splicer.tradeDrugName) > wt.indexOf("placebo")) {
+                    splicer.drugFirst = false;
                 }
             } else if (wt.contains("comparator")) {
                 st = false;
-                if (wt.indexOf(F5.tradeDrugName) < wt.indexOf("comparator")) {
-                    F5.drugFirst = true;
+                if (wt.indexOf(splicer.tradeDrugName) < wt.indexOf("comparator")) {
+                    splicer.drugFirst = true;
                 }
 
-                if (wt.indexOf(F5.tradeDrugName) > wt.indexOf("comparator")) {
-                    F5.drugFirst = false;
+                if (wt.indexOf(splicer.tradeDrugName) > wt.indexOf("comparator")) {
+                    splicer.drugFirst = false;
                 }
             }
         }
@@ -160,7 +167,7 @@ public class Numbers {
         return st;
     }
 
-    public static void getRunningFreq(String cs) {
+    public void getRunningFreq(String cs) {
         cs = Normals.normal8(cs);
         cs = " " + cs + " ";
         if (!cs.contains(" less frequent ") && !cs.contains(" less frequently ")) {
@@ -171,67 +178,67 @@ public class Numbers {
                             if (!cs.contains(" less than 1 . 0 ") && !cs.contains(" less than 1 %")) {
                                 if (!cs.contains(" incidence of 1 . 0 ") && !cs.contains(" incidence of 1 % ")) {
                                     if (!cs.contains(" to 1 . 0 ") && !cs.contains(" to 1 % ")) {
-                                        F5.runningFreq = "";
+                                        runningFreq = "";
                                     } else {
-                                        F5.runningFreq = "1.0";
+                                        runningFreq = "1.0";
                                     }
                                 } else {
-                                    F5.runningFreq = "1.0";
+                                    runningFreq = "1.0";
                                 }
                             } else {
-                                F5.runningFreq = "<1.0";
+                                runningFreq = "<1.0";
                             }
                         } else {
-                            F5.runningFreq = "<3.0";
+                            runningFreq = "<3.0";
                         }
                     } else {
-                        F5.runningFreq = "rare";
+                        runningFreq = "rare";
                     }
                 } else {
-                    F5.runningFreq = "frequent";
+                    runningFreq = "frequent";
                 }
             } else {
-                F5.runningFreq = "infrequent";
+                runningFreq = "infrequent";
             }
         } else {
-            F5.runningFreq = "less frequent";
+            runningFreq = "less frequent";
         }
 
     }
 
-    public static void italicsFreqs() {
+    public void italicsFreqs() {
         String tempFreq;
 
-        for (F5.count = 0; F5.count < F5.goodCount; ++F5.count) {
-            if (F5.goodWords2[F5.count].contains("--i")) {
-                F5.goodWords2[F5.count] = F5.goodWords2[F5.count].replace("--i", "");
-                tempFreq = F5.italicsFreq;
-                if (tempFreq.equals("") && !F5.runningFreq.equals("")) {
+        for (splicer.count = 0; splicer.count < splicer.goodCount; ++splicer.count) {
+            if (splicer.goodWords2[splicer.count].contains("--i")) {
+                splicer.goodWords2[splicer.count] = splicer.goodWords2[splicer.count].replace("--i", "");
+                tempFreq = splicer.italicsFreq;
+                if (tempFreq.isBlank() && !runningFreq.isBlank()) {
                     tempFreq = "unk";
-                    if (F5.runningFreq.equals("frequent")) {
+                    if (runningFreq.equals("frequent")) {
                         tempFreq = "freq";
-                    } else if (F5.runningFreq.equals("less frequent")) {
+                    } else if (runningFreq.equals("less frequent")) {
                         tempFreq = "less freq";
-                    } else if (F5.runningFreq.equals("infrequent")) {
+                    } else if (runningFreq.equals("infrequent")) {
                         tempFreq = "infreq";
-                    } else if (F5.runningFreq.equals("rare")) {
+                    } else if (runningFreq.equals("rare")) {
                         tempFreq = "rare";
-                    } else if (F5.runningFreq.equals("<3.0")) {
+                    } else if (runningFreq.equals("<3.0")) {
                         tempFreq = "<3.0";
-                    } else if (F5.runningFreq.equals("<1.0")) {
+                    } else if (runningFreq.equals("<1.0")) {
                         tempFreq = "<1.0";
-                    } else if (F5.runningFreq.equals("1.0")) {
+                    } else if (runningFreq.equals("1.0")) {
                         tempFreq = "1.0";
                     }
                 }
 
-                PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", tempFreq, "0", "0", "0");
-            } else if (!F5.goodWords2[F5.count].contains("--i")) {
-                F5.finalMedraTerms[F5.finalMedraCount] = F5.goodWords2[F5.count];
-                tempFreq = F5.nonItalicsFreq;
-                if (tempFreq.equals("") && !F5.runningFreq.equals("")) {
+                splicer.postProcess.placeIntoFinal(splicer.goodWords2[splicer.count], splicer.sMethod[splicer.count], splicer.sSection[splicer.count], splicer.countSentences + "", tempFreq, "0", "0", "0");
+            } else if (!splicer.goodWords2[splicer.count].contains("--i")) {
+                splicer.finalMeddraTerms[splicer.finalMeddraCount] = splicer.goodWords2[splicer.count];
+                tempFreq = splicer.nonItalicsFreq;
+                if (tempFreq.isBlank() && !runningFreq.isBlank()) {
                     tempFreq = "unk";
-                    switch (F5.runningFreq) {
+                    switch (runningFreq) {
                         case "frequent":
                             tempFreq = "freq";
                             break;
@@ -256,13 +263,13 @@ public class Numbers {
                     }
                 }
 
-                PostProcess.placeIntoFinal(F5.goodWords2[F5.count], F5.sMethod[F5.count], F5.sSection[F5.count], F5.countSentences + "", tempFreq, "0", "0", "0");
+                splicer.postProcess.placeIntoFinal(splicer.goodWords2[splicer.count], splicer.sMethod[splicer.count], splicer.sSection[splicer.count], splicer.countSentences + "", tempFreq, "0", "0", "0");
             }
         }
 
     }
 
-    public static void textFreqs(String cs) {
+    public void textFreqs(String cs) {
         String rareAde = "";
         String frequentAde = "";
         String infrequentAde = "";
@@ -271,9 +278,9 @@ public class Numbers {
         String tempFreq;
         if (!cs.contains(" frequent :") && !cs.contains(" infrequent :") && !cs.contains(" rare :")) {
             if (!cs.contains(" frequent") && !cs.contains(" infrequent") && !cs.contains(" rare")) {
-                if (!F5.runningFreq.equals("")) {
+                if (!runningFreq.isBlank()) {
                     tempFreq = "unk";
-                    switch (F5.runningFreq) {
+                    switch (runningFreq) {
                         case "frequent":
                             tempFreq = "freq";
                             break;
@@ -297,9 +304,9 @@ public class Numbers {
                             break;
                     }
 
-                    PostProcess.putIntoFinals(tempFreq);
+                    splicer.postProcess.putIntoFinals(tempFreq);
                 } else {
-                    PostProcess.putIntoFinals("unk");
+                    splicer.postProcess.putIntoFinals("unk");
                 }
             } else {
                 tempFreq = "unk";
@@ -311,45 +318,45 @@ public class Numbers {
                     tempFreq = "rare";
                 }
 
-                PostProcess.putIntoFinals(tempFreq);
+                splicer.postProcess.putIntoFinals(tempFreq);
             }
         } else if (cs.contains(";")) {
-            F5.tempArray = cs.split("\\;");
+            splicer.tempArray = cs.split("\\;");
 
-            for (F5.count = 0; F5.count < F5.tempArray.length; ++F5.count) {
-                if (F5.tempArray[F5.count].contains(" frequent :")) {
-                    frequentAde = F5.tempArray[F5.count];
+            for (splicer.count = 0; splicer.count < splicer.tempArray.length; ++splicer.count) {
+                if (splicer.tempArray[splicer.count].contains(" frequent :")) {
+                    frequentAde = splicer.tempArray[splicer.count];
                 }
 
-                if (F5.tempArray[F5.count].contains(" infrequent :")) {
-                    infrequentAde = F5.tempArray[F5.count];
+                if (splicer.tempArray[splicer.count].contains(" infrequent :")) {
+                    infrequentAde = splicer.tempArray[splicer.count];
                 }
 
-                if (F5.tempArray[F5.count].contains(" rare :")) {
-                    rareAde = F5.tempArray[F5.count];
+                if (splicer.tempArray[splicer.count].contains(" rare :")) {
+                    rareAde = splicer.tempArray[splicer.count];
                 }
             }
 
             tempFreq = "unk";
 
-            for (F5.count = 0; F5.count < F5.goodCount; ++F5.count) {
-                F5.finalMedraTerms[F5.finalMedraCount] = F5.goodWords2[F5.count];
-                F5.finalsMethod[F5.finalMedraCount] = F5.sMethod[F5.count];
-                F5.finalsSection[F5.finalMedraCount] = F5.sSection[F5.count];
-                F5.sentNumArray[F5.finalMedraCount] = F5.countSentences + "";
-                F5.placebo[F5.finalMedraCount] = "0";
-                F5.table[F5.finalMedraCount] = "0";
-                F5.ptN[F5.finalMedraCount] = "0";
-                if (!frequentAde.equals("") && frequentAde.contains(F5.goodWords2[F5.count])) {
+            for (splicer.count = 0; splicer.count < splicer.goodCount; ++splicer.count) {
+                splicer.finalMeddraTerms[splicer.finalMeddraCount] = splicer.goodWords2[splicer.count];
+                splicer.finalsMethod[splicer.finalMeddraCount] = splicer.sMethod[splicer.count];
+                splicer.finalsSection[splicer.finalMeddraCount] = splicer.sSection[splicer.count];
+                splicer.sentNumArray[splicer.finalMeddraCount] = splicer.countSentences + "";
+                splicer.placebo[splicer.finalMeddraCount] = "0";
+                splicer.table[splicer.finalMeddraCount] = "0";
+                splicer.ptN[splicer.finalMeddraCount] = "0";
+                if (!frequentAde.isBlank() && frequentAde.contains(splicer.goodWords2[splicer.count])) {
                     tempFreq = "freq";
-                } else if (!infrequentAde.equals("") && infrequentAde.contains(F5.goodWords2[F5.count])) {
+                } else if (!infrequentAde.isBlank() && infrequentAde.contains(splicer.goodWords2[splicer.count])) {
                     tempFreq = "infreq";
-                } else if (!rareAde.equals("") && rareAde.contains(F5.goodWords2[F5.count])) {
+                } else if (!rareAde.isBlank() && rareAde.contains(splicer.goodWords2[splicer.count])) {
                     tempFreq = "rare";
                 }
 
-                F5.finalFreq[F5.finalMedraCount] = tempFreq;
-                ++F5.finalMedraCount;
+                splicer.finalFreq[splicer.finalMeddraCount] = tempFreq;
+                ++splicer.finalMeddraCount;
             }
         } else {
             tempFreq = "unk";
@@ -361,13 +368,13 @@ public class Numbers {
                 tempFreq = "rare";
             }
 
-            PostProcess.putIntoFinals(tempFreq);
+            splicer.postProcess.putIntoFinals(tempFreq);
         }
 
     }
 
     public void getItalicsNumbers() {
-        String italicsTemp = F5.origSent.substring(F5.origSent.indexOf("italics"));
+        String italicsTemp = splicer.origSent.substring(splicer.origSent.indexOf("italics"));
         if (italicsTemp.contains("%")) {
             String firstPart = italicsTemp.substring(0, italicsTemp.indexOf("%"));
             String secondPart = italicsTemp.substring(italicsTemp.indexOf("%"));
@@ -378,44 +385,44 @@ public class Numbers {
                     p = Pattern.compile("[0-9]%");
                     m = p.matcher(italicsTemp);
                     if (m.find()) {
-                        F5.italicsFreq = m.group();
-                        F5.italicsFreq = F5.italicsFreq.replace("%", "");
-                        F5.italicsFreq = F5.compress(F5.italicsFreq);
-                        F5.italicsFreq = F5.italicsFreq.trim();
-                        F5.italicsFreq = ">" + F5.italicsFreq;
+                        splicer.italicsFreq = m.group();
+                        splicer.italicsFreq = splicer.italicsFreq.replace("%", "");
+                        splicer.italicsFreq = Normals.compress(splicer.italicsFreq);
+                        splicer.italicsFreq = splicer.italicsFreq.trim();
+                        splicer.italicsFreq = ">" + splicer.italicsFreq;
                     }
 
                     if (secondPart.contains("&lt;")) {
                         p = Pattern.compile("[0-9]%");
                         m = p.matcher(italicsTemp);
                         if (m.find()) {
-                            F5.nonItalicsFreq = m.group();
-                            F5.nonItalicsFreq = F5.nonItalicsFreq.replace("%", "");
-                            F5.nonItalicsFreq = F5.compress(F5.nonItalicsFreq);
-                            F5.nonItalicsFreq = F5.nonItalicsFreq.trim();
-                            F5.nonItalicsFreq = "<" + F5.nonItalicsFreq;
+                            splicer.nonItalicsFreq = m.group();
+                            splicer.nonItalicsFreq = splicer.nonItalicsFreq.replace("%", "");
+                            splicer.nonItalicsFreq = Normals.compress(splicer.nonItalicsFreq);
+                            splicer.nonItalicsFreq = splicer.nonItalicsFreq.trim();
+                            splicer.nonItalicsFreq = "<" + splicer.nonItalicsFreq;
                         }
                     }
                 } else if (firstPart.contains("&lt;")) {
                     p = Pattern.compile("[0-9]%");
                     m = p.matcher(italicsTemp);
                     if (m.find()) {
-                        F5.italicsFreq = m.group();
-                        F5.italicsFreq = F5.italicsFreq.replace("%", "");
-                        F5.italicsFreq = F5.compress(F5.italicsFreq);
-                        F5.italicsFreq = F5.italicsFreq.trim();
-                        F5.italicsFreq = "<" + F5.italicsFreq;
+                        splicer.italicsFreq = m.group();
+                        splicer.italicsFreq = splicer.italicsFreq.replace("%", "");
+                        splicer.italicsFreq = Normals.compress(splicer.italicsFreq);
+                        splicer.italicsFreq = splicer.italicsFreq.trim();
+                        splicer.italicsFreq = "<" + splicer.italicsFreq;
                     }
 
                     if (secondPart.contains("&#8805;")) {
                         p = Pattern.compile("[0-9]%");
                         m = p.matcher(italicsTemp);
                         if (m.find()) {
-                            F5.nonItalicsFreq = m.group();
-                            F5.nonItalicsFreq = F5.nonItalicsFreq.replace("%", "");
-                            F5.nonItalicsFreq = F5.compress(F5.nonItalicsFreq);
-                            F5.nonItalicsFreq = F5.nonItalicsFreq.trim();
-                            F5.nonItalicsFreq = ">" + F5.nonItalicsFreq;
+                            splicer.nonItalicsFreq = m.group();
+                            splicer.nonItalicsFreq = splicer.nonItalicsFreq.replace("%", "");
+                            splicer.nonItalicsFreq = Normals.compress(splicer.nonItalicsFreq);
+                            splicer.nonItalicsFreq = splicer.nonItalicsFreq.trim();
+                            splicer.nonItalicsFreq = ">" + splicer.nonItalicsFreq;
                         }
                     }
                 }

@@ -5,6 +5,9 @@ import java.util.regex.Pattern;
 
 public class Normals {
 
+    private static final Pattern ALFA = Pattern.compile("([a-z]|[A-Z])");
+
+
     private Normals() {
     }
 
@@ -24,7 +27,7 @@ public class Normals {
         component = component.replace("&#8805;", ">=");
         component = component.replace("\t", " ");
         component = component.replaceAll("\\/", " or ");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -35,7 +38,7 @@ public class Normals {
         component = component.replace("&#8212;", "");
         component = component.replace("&#8805;", ">=");
         component = component.replace("\t", " ");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -71,7 +74,7 @@ public class Normals {
         component = component.replace("and", ",");
         component = component.replace(", ,", ",");
         component = component.replaceAll("\"", "");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         component = " " + component + " ";
         return component;
@@ -99,7 +102,7 @@ public class Normals {
         component = component.replaceAll("^", " ");
         component = component.replace("~", " ");
         component = component.replaceAll("\\;", " ,");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -127,13 +130,13 @@ public class Normals {
         component = component.replace(" trials", " ");
         component = component.replace("vs", " ");
         component = component.replace(" include ", " ");
-        F5.tempArray5 = component.split(">");
-        if (component.contains(">") && F5.tempArray5.length > 2) {
+        var tempArray5 = component.split(">");
+        if (component.contains(">") && tempArray5.length > 2) {
             component = component.substring(component.lastIndexOf(">"));
             component = component.replace(">", "");
         }
 
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -156,7 +159,7 @@ public class Normals {
         component = component.replaceAll("^", " ");
         component = component.replace("~", " ");
         component = component.replace("and", ",");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -179,7 +182,7 @@ public class Normals {
         component = component.replaceAll("\\*", " * ");
         component = component.replaceAll("^", " ");
         component = component.replace("~", " ");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -204,7 +207,7 @@ public class Normals {
         component = component.replaceAll("\\*", "  ");
         component = component.replaceAll("^", " ");
         component = component.replace("~", " ");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -236,7 +239,7 @@ public class Normals {
         component = component.replaceAll("^", " ");
         component = component.replace("~", " ");
         component = component.replaceAll("\\;", " ,");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         component = " " + component + " ";
         return component;
@@ -254,7 +257,7 @@ public class Normals {
         component = component.replace("&lt", "");
         component = component.replace("â", "");
         component = component.replace("Â", "");
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         return component;
     }
@@ -284,16 +287,34 @@ public class Normals {
             component = component.substring(component.lastIndexOf("-"));
         }
 
-        component = F5.compress(component);
+        component = compress(component);
         component = component.trim();
         component = " " + component + " ";
         return component;
     }
 
+    public static String compress(String ss) {
+        StringBuilder dest = new StringBuilder();
+        if (ss.length() == 0) {
+            return ss;
+        } else {
+            char c = ss.charAt(0);
+
+            for (int i = 1; i < ss.length(); ++i) {
+                if (c != ' ' || ss.charAt(i) != ' ') {
+                    dest.append(c);
+                }
+
+                c = ss.charAt(i);
+            }
+
+            dest.append(c);
+            return dest.toString();
+        }
+    }
+
     public static String clip(String c) {
-        String anyLetter = "([a-z]|[A-Z])";
-        Pattern p = Pattern.compile(anyLetter);
-        Matcher m = p.matcher(c);
+        Matcher m = ALFA.matcher(c);
         boolean mat2 = m.find();
         if (mat2) {
             String matchedLetter = m.group();
@@ -302,4 +323,5 @@ public class Normals {
             return c;
         }
     }
+
 }

@@ -2,8 +2,19 @@ package nl.erasmusmc.mi.biosemantics.splicer;
 
 public class PorterStemmer {
 
+    private PorterStemmer() {
+    }
 
-    public String stem(String str) {
+
+    public static String portStem(String ts) {
+        if (ts.length() > 1) {
+            return stem(ts.toLowerCase());
+        } else {
+            return "Invalid term";
+        }
+    }
+
+    private static String stem(String str) {
         if (str.length() > 0) {
             char[] c = str.toCharArray();
 
@@ -13,21 +24,21 @@ public class PorterStemmer {
                 }
             }
 
-            str = this.step1a(str);
-            str = this.step1b(str);
-            str = this.step1c(str);
-            str = this.step2(str);
-            str = this.step3(str);
-            str = this.step4(str);
-            str = this.step5a(str);
-            str = this.step5b(str);
+            str = step1a(str);
+            str = step1b(str);
+            str = step1c(str);
+            str = step2(str);
+            str = step3(str);
+            str = step4(str);
+            str = step5a(str);
+            str = step5b(str);
             return str;
         } else {
             return "No term entered";
         }
     }
 
-    protected String step1a(String str) {
+    private static String step1a(String str) {
         if (str.length() > 1) {
             final String substring = str.substring(0, str.length() - 2);
             if (str.endsWith("sses")) {
@@ -44,23 +55,23 @@ public class PorterStemmer {
         }
     }
 
-    protected String step1b(String str) {
+    private static String step1b(String str) {
         if (str.endsWith("eed")) {
-            return this.stringMeasure(str.substring(0, str.length() - 3)) > 0 ? str.substring(0, str.length() - 1) : str;
-        } else if (str.endsWith("ed") && this.containsVowel(str.substring(0, str.length() - 2))) {
-            return this.step1b2(str.substring(0, str.length() - 2));
+            return stringMeasure(str.substring(0, str.length() - 3)) > 0 ? str.substring(0, str.length() - 1) : str;
+        } else if (str.endsWith("ed") && containsVowel(str.substring(0, str.length() - 2))) {
+            return step1b2(str.substring(0, str.length() - 2));
         } else {
-            return str.endsWith("ing") && this.containsVowel(str.substring(0, str.length() - 3)) ? this.step1b2(str.substring(0, str.length() - 3)) : str;
+            return str.endsWith("ing") && containsVowel(str.substring(0, str.length() - 3)) ? step1b2(str.substring(0, str.length() - 3)) : str;
         }
     }
 
-    protected String step1b2(String str) {
+    private static String step1b2(String str) {
         if (str.length() > 1) {
             if (!str.endsWith("at") && !str.endsWith("bl") && !str.endsWith("iz")) {
-                if (this.endsWithDoubleConsonant(str) && !str.endsWith("l") && !str.endsWith("s") && !str.endsWith("z")) {
+                if (endsWithDoubleConsonant(str) && !str.endsWith("l") && !str.endsWith("s") && !str.endsWith("z")) {
                     return str.substring(0, str.length() - 1);
                 } else {
-                    return this.stringMeasure(str) == 1 && this.endsWithCVC(str) ? str + "e" : str;
+                    return stringMeasure(str) == 1 && endsWithCVC(str) ? str + "e" : str;
                 }
             } else {
                 return str + "e";
@@ -70,145 +81,145 @@ public class PorterStemmer {
         }
     }
 
-    protected String step1c(String str) {
+    private static String step1c(String str) {
         if (str.length() > 1) {
-            return str.endsWith("y") && this.containsVowel(str.substring(0, str.length() - 1)) ? str.substring(0, str.length() - 1) + "i" : str;
+            return str.endsWith("y") && containsVowel(str.substring(0, str.length() - 1)) ? str.substring(0, str.length() - 1) + "i" : str;
         } else {
             return str;
         }
     }
 
-    protected String step2(String str) {
-        if (str.endsWith("ational") && this.stringMeasure(str.substring(0, str.length() - 5)) > 0) {
+    private static String step2(String str) {
+        if (str.endsWith("ational") && stringMeasure(str.substring(0, str.length() - 5)) > 0) {
             return str.substring(0, str.length() - 5) + "e";
         } else {
-            if (str.endsWith("tional") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+            if (str.endsWith("tional") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
                 return str.substring(0, str.length() - 2);
-            } else if (str.endsWith("enci") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+            } else if (str.endsWith("enci") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
                 return str.substring(0, str.length() - 2);
-            } else if (str.endsWith("anci") && this.stringMeasure(str.substring(0, str.length() - 1)) > 0) {
+            } else if (str.endsWith("anci") && stringMeasure(str.substring(0, str.length() - 1)) > 0) {
                 return str.substring(0, str.length() - 1) + "e";
-            } else if (str.endsWith("izer") && this.stringMeasure(str.substring(0, str.length() - 1)) > 0) {
+            } else if (str.endsWith("izer") && stringMeasure(str.substring(0, str.length() - 1)) > 0) {
                 return str.substring(0, str.length() - 1);
-            } else if (str.endsWith("abli") && this.stringMeasure(str.substring(0, str.length() - 1)) > 0) {
+            } else if (str.endsWith("abli") && stringMeasure(str.substring(0, str.length() - 1)) > 0) {
                 return str.substring(0, str.length() - 1) + "e";
-            } else if (str.endsWith("alli") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+            } else if (str.endsWith("alli") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
                 return str.substring(0, str.length() - 2);
-            } else if (str.endsWith("entli") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+            } else if (str.endsWith("entli") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
                 return str.substring(0, str.length() - 2);
-            } else if (str.endsWith("eli") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+            } else if (str.endsWith("eli") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
                 return str.substring(0, str.length() - 2);
-            } else if (str.endsWith("ousli") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+            } else if (str.endsWith("ousli") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
                 return str.substring(0, str.length() - 2);
-            } else if (str.endsWith("ization") && this.stringMeasure(str.substring(0, str.length() - 5)) > 0) {
+            } else if (str.endsWith("ization") && stringMeasure(str.substring(0, str.length() - 5)) > 0) {
                 return str.substring(0, str.length() - 5) + "e";
-            } else if (str.endsWith("ation") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+            } else if (str.endsWith("ation") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
                 return str.substring(0, str.length() - 3) + "e";
-            } else if (str.endsWith("ator") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+            } else if (str.endsWith("ator") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
                 return str.substring(0, str.length() - 2) + "e";
-            } else if (str.endsWith("alism") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+            } else if (str.endsWith("alism") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
                 return str.substring(0, str.length() - 3);
-            } else if (str.endsWith("iveness") && this.stringMeasure(str.substring(0, str.length() - 4)) > 0) {
+            } else if (str.endsWith("iveness") && stringMeasure(str.substring(0, str.length() - 4)) > 0) {
                 return str.substring(0, str.length() - 4);
-            } else if (str.endsWith("fulness") && this.stringMeasure(str.substring(0, str.length() - 4)) > 0) {
+            } else if (str.endsWith("fulness") && stringMeasure(str.substring(0, str.length() - 4)) > 0) {
                 return str.substring(0, str.length() - 4);
-            } else if (str.endsWith("ousness") && this.stringMeasure(str.substring(0, str.length() - 4)) > 0) {
+            } else if (str.endsWith("ousness") && stringMeasure(str.substring(0, str.length() - 4)) > 0) {
                 return str.substring(0, str.length() - 4);
-            } else if (str.endsWith("aliti") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+            } else if (str.endsWith("aliti") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
                 return str.substring(0, str.length() - 3);
-            } else if (str.endsWith("iviti") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+            } else if (str.endsWith("iviti") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
                 return str.substring(0, str.length() - 3) + "e";
             } else {
-                return str.endsWith("biliti") && this.stringMeasure(str.substring(0, str.length() - 5)) > 0 ? str.substring(0, str.length() - 5) + "le" : str;
+                return str.endsWith("biliti") && stringMeasure(str.substring(0, str.length() - 5)) > 0 ? str.substring(0, str.length() - 5) + "le" : str;
             }
         }
     }
 
-    protected String step3(String str) {
-        if (str.endsWith("icate") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+    private static String step3(String str) {
+        if (str.endsWith("icate") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("ative") && this.stringMeasure(str.substring(0, str.length() - 5)) > 0) {
+        } else if (str.endsWith("ative") && stringMeasure(str.substring(0, str.length() - 5)) > 0) {
             return str.substring(0, str.length() - 5);
-        } else if (str.endsWith("alize") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+        } else if (str.endsWith("alize") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("iciti") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+        } else if (str.endsWith("iciti") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("ical") && this.stringMeasure(str.substring(0, str.length() - 2)) > 0) {
+        } else if (str.endsWith("ical") && stringMeasure(str.substring(0, str.length() - 2)) > 0) {
             return str.substring(0, str.length() - 2);
-        } else if (str.endsWith("ful") && this.stringMeasure(str.substring(0, str.length() - 3)) > 0) {
+        } else if (str.endsWith("ful") && stringMeasure(str.substring(0, str.length() - 3)) > 0) {
             return str.substring(0, str.length() - 3);
         } else {
-            return str.endsWith("ness") && this.stringMeasure(str.substring(0, str.length() - 4)) > 0 ? str.substring(0, str.length() - 4) : str;
+            return str.endsWith("ness") && stringMeasure(str.substring(0, str.length() - 4)) > 0 ? str.substring(0, str.length() - 4) : str;
         }
     }
 
-    protected String step4(String str) {
-        if (str.endsWith("al") && this.stringMeasure(str.substring(0, str.length() - 2)) > 1) {
+    private static String step4(String str) {
+        if (str.endsWith("al") && stringMeasure(str.substring(0, str.length() - 2)) > 1) {
             return str.substring(0, str.length() - 2);
-        } else if (str.endsWith("ance") && this.stringMeasure(str.substring(0, str.length() - 4)) > 1) {
+        } else if (str.endsWith("ance") && stringMeasure(str.substring(0, str.length() - 4)) > 1) {
             return str.substring(0, str.length() - 4);
-        } else if (str.endsWith("ence") && this.stringMeasure(str.substring(0, str.length() - 4)) > 1) {
+        } else if (str.endsWith("ence") && stringMeasure(str.substring(0, str.length() - 4)) > 1) {
             return str.substring(0, str.length() - 4);
-        } else if (str.endsWith("er") && this.stringMeasure(str.substring(0, str.length() - 2)) > 1) {
+        } else if (str.endsWith("er") && stringMeasure(str.substring(0, str.length() - 2)) > 1) {
             return str.substring(0, str.length() - 2);
-        } else if (str.endsWith("ic") && this.stringMeasure(str.substring(0, str.length() - 2)) > 1) {
+        } else if (str.endsWith("ic") && stringMeasure(str.substring(0, str.length() - 2)) > 1) {
             return str.substring(0, str.length() - 2);
-        } else if (str.endsWith("able") && this.stringMeasure(str.substring(0, str.length() - 4)) > 1) {
+        } else if (str.endsWith("able") && stringMeasure(str.substring(0, str.length() - 4)) > 1) {
             return str.substring(0, str.length() - 4);
-        } else if (str.endsWith("ible") && this.stringMeasure(str.substring(0, str.length() - 4)) > 1) {
+        } else if (str.endsWith("ible") && stringMeasure(str.substring(0, str.length() - 4)) > 1) {
             return str.substring(0, str.length() - 4);
-        } else if (str.endsWith("ant") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if (str.endsWith("ant") && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("ement") && this.stringMeasure(str.substring(0, str.length() - 5)) > 1) {
+        } else if (str.endsWith("ement") && stringMeasure(str.substring(0, str.length() - 5)) > 1) {
             return str.substring(0, str.length() - 5);
-        } else if (str.endsWith("ment") && this.stringMeasure(str.substring(0, str.length() - 4)) > 1) {
+        } else if (str.endsWith("ment") && stringMeasure(str.substring(0, str.length() - 4)) > 1) {
             return str.substring(0, str.length() - 4);
-        } else if (str.endsWith("ent") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if (str.endsWith("ent") && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
-        } else if ((str.endsWith("sion") || str.endsWith("tion")) && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if ((str.endsWith("sion") || str.endsWith("tion")) && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("ou") && this.stringMeasure(str.substring(0, str.length() - 2)) > 1) {
+        } else if (str.endsWith("ou") && stringMeasure(str.substring(0, str.length() - 2)) > 1) {
             return str.substring(0, str.length() - 2);
-        } else if (str.endsWith("ism") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if (str.endsWith("ism") && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("ate") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if (str.endsWith("ate") && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("iti") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if (str.endsWith("iti") && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("ous") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if (str.endsWith("ous") && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
-        } else if (str.endsWith("ive") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1) {
+        } else if (str.endsWith("ive") && stringMeasure(str.substring(0, str.length() - 3)) > 1) {
             return str.substring(0, str.length() - 3);
         } else {
-            return str.endsWith("ize") && this.stringMeasure(str.substring(0, str.length() - 3)) > 1 ? str.substring(0, str.length() - 3) : str;
+            return str.endsWith("ize") && stringMeasure(str.substring(0, str.length() - 3)) > 1 ? str.substring(0, str.length() - 3) : str;
         }
     }
 
-    protected String step5a(String str) {
+    private static String step5a(String str) {
         if (str.length() > 1) {
-            if (this.stringMeasure(str.substring(0, str.length() - 1)) > 1 && str.endsWith("e")) {
+            if (stringMeasure(str.substring(0, str.length() - 1)) > 1 && str.endsWith("e")) {
                 return str.substring(0, str.length() - 1);
             } else {
-                return this.stringMeasure(str.substring(0, str.length() - 1)) == 1 && !this.endsWithCVC(str.substring(0, str.length() - 1)) && str.endsWith("e") ? str.substring(0, str.length() - 1) : str;
+                return stringMeasure(str.substring(0, str.length() - 1)) == 1 && !endsWithCVC(str.substring(0, str.length() - 1)) && str.endsWith("e") ? str.substring(0, str.length() - 1) : str;
             }
         } else {
             return str;
         }
     }
 
-    protected String step5b(String str) {
+    private static String step5b(String str) {
         if (str.length() > 1) {
-            return str.endsWith("l") && this.endsWithDoubleConsonant(str) && this.stringMeasure(str.substring(0, str.length() - 1)) > 1 ? str.substring(0, str.length() - 1) : str;
+            return str.endsWith("l") && endsWithDoubleConsonant(str) && stringMeasure(str.substring(0, str.length() - 1)) > 1 ? str.substring(0, str.length() - 1) : str;
         } else {
             return str;
         }
     }
 
-    protected boolean containsVowel(String str) {
+    private static boolean containsVowel(String str) {
         char[] strchars = str.toCharArray();
 
         for (char strchar : strchars) {
-            if (this.isVowel(strchar)) {
+            if (isVowel(strchar)) {
                 return true;
             }
         }
@@ -216,22 +227,22 @@ public class PorterStemmer {
         return str.indexOf(121) > -1;
     }
 
-    public boolean isVowel(char c) {
+    private static boolean isVowel(char c) {
         return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
     }
 
-    protected boolean endsWithDoubleConsonant(String str) {
+    private static boolean endsWithDoubleConsonant(String str) {
         char c = str.charAt(str.length() - 1);
-        return c == str.charAt(str.length() - 2) && !this.containsVowel(str.substring(str.length() - 2));
+        return c == str.charAt(str.length() - 2) && !containsVowel(str.substring(str.length() - 2));
     }
 
-    protected int stringMeasure(String str) {
+    private static int stringMeasure(String str) {
         int count = 0;
         boolean vowelSeen = false;
         char[] strchars = str.toCharArray();
 
         for (char strchar : strchars) {
-            if (this.isVowel(strchar)) {
+            if (isVowel(strchar)) {
                 vowelSeen = true;
             } else if (vowelSeen) {
                 ++count;
@@ -242,18 +253,18 @@ public class PorterStemmer {
         return count;
     }
 
-    protected boolean endsWithCVC(String str) {
+    private static boolean endsWithCVC(String str) {
         if (str.length() >= 3) {
             char c = str.charAt(str.length() - 1);
             char v = str.charAt(str.length() - 2);
             char c2 = str.charAt(str.length() - 3);
             if (c != 'w' && c != 'x' && c != 'y') {
-                if (this.isVowel(c)) {
+                if (isVowel(c)) {
                     return false;
-                } else if (!this.isVowel(v)) {
+                } else if (!isVowel(v)) {
                     return false;
                 } else {
-                    return !this.isVowel(c2);
+                    return !isVowel(c2);
                 }
             } else {
                 return false;

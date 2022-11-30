@@ -9,54 +9,68 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_SPLICER_JANSSEN;
 import static nl.erasmusmc.mi.biosemantics.splicer.Database.getConnection;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.L1;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.L2;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.L3;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.M;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.T1L1;
+import static nl.erasmusmc.mi.biosemantics.splicer.Method.T1M1;
 
 public class Flow {
-    public static final String SPLICER_JANSSEN = "SPLICER_JANSSEN";
     private static final Logger log = LogManager.getLogger();
-    static Tables tab = new Tables();
-    static NonAde nde = new NonAde();
-    static AdeProcess ade = new AdeProcess();
-    static CleanUp cle = new CleanUp();
-    static Section sec = new Section();
-    static StringBuilder allUpdateStatements = new StringBuilder();
+    private final Tables tab;
+    private final Splicer splicer;
+    private StringBuilder allUpdateStatements;
+    private int updateStatementsCount = 0;
 
-    public static void sendToDatabase() {
-        String sect = F5.finalsSection[F5.count];
+    public Flow(Splicer splicer) {
+        this.splicer = splicer;
+        this.tab = new Tables(splicer);
+        this.allUpdateStatements = new StringBuilder();
+    }
 
-        if (Objects.equals(sect, "Precautions (beta)") || Objects.equals(sect, "Adverse Reactions") || Objects.equals(sect, "Post Marketing") || Objects.equals(sect, "Warnings (beta)") || Objects.equals(sect, "Black Box (beta)")) {
+    public void sendToDatabase() {
+        String sect = splicer.finalsSection[splicer.count];
 
-            String q = "'";
+        if (Objects.equals(sect, "Precautions (beta)") || Objects.equals(sect, "Adverse Reactions")
+                || Objects.equals(sect, "Post Marketing") || Objects.equals(sect, "Warnings (beta)")
+                || Objects.equals(sect, "Black Box (beta)")) {
 
-            String targetTable;
+
             String quer1;
             String quer2;
             String allQuer;
 
-            targetTable = SPLICER_JANSSEN;
-            if (!Objects.equals(F5.matchOutcome, "medraMatch")) {
-                log.debug("{} does not match a MedDRA term", F5.origSPLTerm);
+            if (Boolean.FALSE.equals(splicer.matchedOutcome)) {
+                log.debug("{} does not match a MedDRA term", splicer.origSPLTerm);
                 return;
             }
 
-            quer1 = "INSERT INTO " + targetTable + " (SPL_ID, SET_ID, TRADE_NAME, SPL_DATE, SPL_SECTION, CONDITION_SOURCE_VALUE, CONDITION_LLT, parseMethod, sentenceNum, labdirection, drugfreq) VALUES(";
-            quer2 = q + F5.SPLId + q + "," + q + F5.setId + q + "," + q + F5.tradeDrugName.trim() + q + "," + q + F5.SPLDate + q + "," + q + F5.finalsSection[F5.count] + q + "," + q + F5.origSPLTerm + q + "," + q + F5.finalMedraTerms[F5.count] + q + "," + q + F5.finalsMethod[F5.count] + q + "," + q + F5.sentNumArray[F5.count] + q + "," + q + F5.direction + q + "," + q + F5.finalFreq[F5.count] + q + "); ";
+            quer1 = "INSERT INTO " + TABLE_SPLICER_JANSSEN + " (SPL_ID, SET_ID, TRADE_NAME, SPL_DATE, SPL_SECTION, CONDITION_SOURCE_VALUE, CONDITION_LLT, parseMethod, sentenceNum, labdirection, drugfreq) VALUES(";
+            quer2 = qtd(splicer.splId) + "," + qtd(splicer.setId) + "," + qtd(splicer.tradeDrugName.trim()) + "," +
+                    qtd(splicer.splDate) + "," + qtd(splicer.finalsSection[splicer.count]) + "," +
+                    qtd(splicer.origSPLTerm) + "," + qtd(splicer.finalMeddraTerms[splicer.count]) + "," +
+                    qtd(splicer.finalsMethod[splicer.count].toString()) + "," + qtd(splicer.sentNumArray[splicer.count]) + "," +
+                    qtd(splicer.direction) + "," + qtd(splicer.finalFreq[splicer.count]) + "); ";
             allQuer = quer1 + quer2;
-            log.debug("Inserting into table {}, {} - {}", targetTable, F5.tradeDrugName, F5.finalMedraTerms[F5.count]);
+            log.debug("Inserting into table {}, {} - {}", TABLE_SPLICER_JANSSEN, splicer.tradeDrugName, splicer.finalMeddraTerms[splicer.count]);
             allUpdateStatements.append(allQuer);
+            updateStatementsCount++;
+            if (updateStatementsCount > 50) {
+                commitToDB();
+            }
         }
 
     }
 
-    public static void deleteFromDatabase(String b) {
-        String q = "'";
-
-        try (Statement stmt = getConnection().createStatement()) {
-            String quer;
-
-            quer = "DELETE FROM " + SPLICER_JANSSEN + " where SPL_ID = " + q + b + q;
-            int c = stmt.executeUpdate(quer);
-            log.debug("Delete from DB: {} rows deleted with query: {} ", c, quer);
+    public void deleteFromDatabase(String b) {
+        var q = "DELETE FROM " + TABLE_SPLICER_JANSSEN + " WHERE SPL_ID = ?";
+        try (var stmt = getConnection().prepareStatement(q)) {
+            stmt.setString(1, b);
+            int c = stmt.executeUpdate();
+            log.debug("Delete from DB: {} rows deleted with query: {} ", c, q);
         } catch (Exception e) {
             log.error("Got an exception in when deleting from db");
             log.error(e.getMessage());
@@ -64,7 +78,7 @@ public class Flow {
 
     }
 
-    public static boolean preMappingFilter(String f) {
+    public boolean preMappingFilter(String f) {
         String anyLetter = "([a-z]|[A-Z])";
         Pattern p = Pattern.compile(anyLetter);
         Matcher m = p.matcher(f);
@@ -76,15 +90,17 @@ public class Flow {
         }
     }
 
-    public static void commitToDB() {
+    public void commitToDB() {
         String query = allUpdateStatements.toString();
         if (!query.isBlank()) {
             try (Statement stmt = getConnection().createStatement()) {
                 log.info("Committing matches to database");
                 stmt.execute(query);
-                allUpdateStatements = new StringBuilder();
             } catch (SQLException e) {
                 e.printStackTrace();
+            } finally {
+                allUpdateStatements = new StringBuilder();
+                updateStatementsCount = 0;
             }
         } else {
             log.info("Nothing to commit");
@@ -92,117 +108,95 @@ public class Flow {
     }
 
     public void gatherData() {
-        nde.getGenName(F5.allDrugInfo);
-        nde.getTradeName(F5.allDrugInfo2);
-        nde.getActiveMoiety(F5.allActiveMoiety);
+        splicer.nde.getGenName(splicer.allDrugInfo);
+        splicer.nde.getTradeName(splicer.allDrugInfo2);
+        splicer.nde.getActiveMoiety(splicer.allActiveMoiety);
     }
 
     public void tableProcessing() {
-        String theTable = F5.sent[F5.countSentences].substring(0, F5.sent[F5.countSentences].indexOf("</table>"));
-        ++F5.tablesFound;
+        String theTable = splicer.sent[splicer.countSentences].substring(0, splicer.sent[splicer.countSentences].indexOf("</table>"));
         tab.processTables(theTable);
-        String postTable = F5.sent[F5.countSentences].substring(F5.sent[F5.countSentences].indexOf("</table>"));
-        F5.goodCount = 0;
-        F5.medraCount = 0;
+        String postTable = splicer.sent[splicer.countSentences].substring(splicer.sent[splicer.countSentences].indexOf("</table>"));
+        splicer.goodCount = 0;
+        splicer.meddraCount = 0;
         if (postTable.length() > 4) {
             postTable = postTable.replace("</table>", "");
-            F5.sent[F5.countSentences] = postTable;
+            splicer.sent[splicer.countSentences] = postTable;
         }
 
     }
 
     public void tableProcessingAlternative() {
-        F5.allOfTable = F5.allOfTable + F5.sent[F5.countSentences];
-        if (F5.sent[F5.countSentences].indexOf("</tbody>") > -1) {
-            String theTable = F5.allOfTable;
-            ++F5.tablesFound;
+        splicer.allOfTable = splicer.allOfTable + splicer.sent[splicer.countSentences];
+        if (splicer.sent[splicer.countSentences].contains("</tbody>")) {
+            String theTable = splicer.allOfTable;
             tab.processTables(theTable);
-            F5.gettingTable = false;
-            F5.allOfTable = "";
+            splicer.gettingTable = false;
+            splicer.allOfTable = "";
         }
 
     }
 
     public void processSentenceWithColon() {
         String sentPart2;
-        F5.tempArray4 = F5.sentForList.split("\\:");
-        if (F5.tempArray4.length == 1) {
-            sentPart2 = F5.sentForList.substring(F5.sentForList.indexOf(":"));
+        splicer.tempArray4 = splicer.sentForList.split("\\:");
+        if (splicer.tempArray4.length == 1) {
+            sentPart2 = splicer.sentForList.substring(splicer.sentForList.indexOf(":"));
             sentPart2 = sentPart2.replaceAll("\\:", " ");
         } else {
-            sentPart2 = F5.sentForList;
+            sentPart2 = splicer.sentForList;
         }
 
-        if (!F5.nSpl.contains("%")) {
-            ade.getList(sentPart2);
-            F5.isList = true;
-        } else if (F5.nSpl.contains("%") && F5.nSpl.contains("(") && F5.nSpl.contains(")") && F5.nSpl.indexOf("(") < F5.nSpl.indexOf("%") && F5.nSpl.indexOf("%") < F5.nSpl.indexOf(")") && F5.tempArray.length > 4) {
-            ade.getList2(F5.sentForList);
-            F5.isList = true;
-        } else if (F5.nSpl.contains("%") && F5.nSpl.contains("(") && F5.nSpl.contains(")") && F5.tempArray.length <= 4) {
-            ade.getList3(F5.sentForList);
-            F5.isList = true;
+
+        if (splicer.nSpl.contains("%") && splicer.nSpl.contains("(") && splicer.nSpl.contains(")") && splicer.nSpl.indexOf("(") < splicer.nSpl.indexOf("%")
+                && splicer.nSpl.indexOf("%") < splicer.nSpl.indexOf(")") && splicer.tempArray.length > 4) {
+            splicer.adeProcess.getList2(splicer.sentForList);
+            splicer.isList = true;
+        } else if (splicer.nSpl.contains("%") && splicer.nSpl.contains("(") && splicer.nSpl.contains(")") && splicer.tempArray.length <= 4) {
+            splicer.adeProcess.getList3(splicer.sentForList);
+            splicer.isList = true;
         } else {
-            ade.getList(sentPart2);
-            F5.isList = true;
+            splicer.adeProcess.getList(sentPart2);
+            splicer.isList = true;
         }
 
     }
 
     public void processSentenceWithHighCommaRatio() {
-        log.debug("                                  Likely a list comma ratio : " + F5.commaRatio + "   " + F5.nSpl);
-        if (!F5.nSpl.contains("%") && F5.tempArray.length > 2) {
-            ade.getList(F5.sentForList);
-            F5.isList = true;
-        } else if (!F5.nSpl.contains("%") && F5.tempArray.length > 2 && F5.sentForList.contains(":")) {
-            ade.getList(F5.sentForList);
-            F5.isList = true;
-        } else if (F5.nSpl.contains("%") && F5.nSpl.contains("(") && F5.nSpl.contains(")") && F5.nSpl.indexOf("(") < F5.nSpl.indexOf("%") && F5.nSpl.indexOf("%") < F5.nSpl.indexOf(")") && F5.tempArray.length > 4) {
-            ade.getList2(F5.sentForList);
-            F5.isList = true;
-        } else if (F5.nSpl.contains("%") && F5.nSpl.contains("(") && F5.nSpl.contains(")") && F5.tempArray.length <= 4) {
-            ade.getList3(F5.sentForList);
-            F5.isList = true;
+        if (!splicer.nSpl.contains("%") && splicer.tempArray.length > 2) {
+            splicer.adeProcess.getList(splicer.sentForList);
+            splicer.isList = true;
+        } else if (splicer.nSpl.contains("%") && splicer.nSpl.contains("(") && splicer.nSpl.contains(")") && splicer.nSpl.indexOf("(") < splicer.nSpl.indexOf("%") && splicer.nSpl.indexOf("%") < splicer.nSpl.indexOf(")") && splicer.tempArray.length > 4) {
+            splicer.adeProcess.getList2(splicer.sentForList);
+            splicer.isList = true;
+        } else if (splicer.nSpl.contains("%") && splicer.nSpl.contains("(") && splicer.nSpl.contains(")") && splicer.tempArray.length <= 4) {
+            splicer.adeProcess.getList3(splicer.sentForList);
+            splicer.isList = true;
         } else {
-            AdeProcess.getMeddraTerms(F5.nSpl);
+            splicer.adeProcess.getMeddraTerms(splicer.nSpl);
         }
 
-    }
-
-    public void postAdeProcessing() {
-        F5.tableOn = false;
-        F5.allPregInfo = F5.allPregInfo.replaceAll("Â ", " ");
-        nde.getPregCat(F5.allPregInfo);
-        F5.pregCat = Normals.normalBadTable(F5.pregCat);
-        if (F5.pregCat.contains(" ")) {
-            F5.pregCat = F5.pregCat.substring(0, F5.pregCat.indexOf(" "));
-        }
-
-        sec.processSections();
-        F5.maxMedraCount = F5.finalMedraCount - 1;
-        F5.count = 0;
-        log.debug("Done post-Ade-Processing");
     }
 
     public void assignMethod() {
-        if (F5.finalMedraTerms[F5.count].startsWith("M ")) {
-            F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].replaceFirst("M ", "");
-            F5.sm = "M";
-        } else if (F5.finalMedraTerms[F5.count].startsWith("L1 ")) {
-            F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].replaceFirst("L1 ", "");
-            F5.sm = "L1";
-        } else if (F5.finalMedraTerms[F5.count].startsWith("L2 ")) {
-            F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].replaceFirst("L2 ", "");
-            F5.sm = "L2";
-        } else if (F5.finalMedraTerms[F5.count].startsWith("L3 ")) {
-            F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].replaceFirst("L3 ", "");
-            F5.sm = "L3";
-        } else if (F5.finalMedraTerms[F5.count].startsWith("T1M1 ")) {
-            F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].replaceFirst("T1M1 ", "");
-            F5.sm = "T1M1";
-        } else if (F5.finalMedraTerms[F5.count].startsWith("T1L1 ")) {
-            F5.finalMedraTerms[F5.count] = F5.finalMedraTerms[F5.count].replaceFirst("T1L1 ", "");
-            F5.sm = "T1L1";
+        if (splicer.finalMeddraTerms[splicer.count].startsWith("M ")) {
+            splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].replaceFirst("M ", "");
+            splicer.sm = M;
+        } else if (splicer.finalMeddraTerms[splicer.count].startsWith("L1 ")) {
+            splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].replaceFirst("L1 ", "");
+            splicer.sm = L1;
+        } else if (splicer.finalMeddraTerms[splicer.count].startsWith("L2 ")) {
+            splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].replaceFirst("L2 ", "");
+            splicer.sm = L2;
+        } else if (splicer.finalMeddraTerms[splicer.count].startsWith("L3 ")) {
+            splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].replaceFirst("L3 ", "");
+            splicer.sm = L3;
+        } else if (splicer.finalMeddraTerms[splicer.count].startsWith("T1M1 ")) {
+            splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].replaceFirst("T1M1 ", "");
+            splicer.sm = T1M1;
+        } else if (splicer.finalMeddraTerms[splicer.count].startsWith("T1L1 ")) {
+            splicer.finalMeddraTerms[splicer.count] = splicer.finalMeddraTerms[splicer.count].replaceFirst("T1L1 ", "");
+            splicer.sm = T1L1;
         }
 
     }
@@ -223,53 +217,52 @@ public class Flow {
             }
         }
 
-        all = new StringBuilder(F5.compress(all.toString()));
+        all = new StringBuilder(Normals.compress(all.toString()));
         all = new StringBuilder(all.toString().trim());
         return all.toString();
     }
 
     public void setTransformFlag() {
-        F5.matchedMedraTerm = F5.matchedMedraTerm.trim();
-        if (F5.matchedMedraTerm.equalsIgnoreCase(F5.finalMedraTerms[F5.count])) {
-            F5.transformFlag = F5.finalMedraTerms[F5.count];
-            F5.termForEscape = F5.finalMedraTerms[F5.count];
-        } else if (!F5.matchedMedraTerm.equalsIgnoreCase(F5.finalMedraTerms[F5.count])) {
-            F5.transformFlag = F5.origTerm;
-            F5.matchedMedraTerm = F5.matchedMedraTerm.trim();
-            F5.termForEscape = F5.matchedMedraTerm;
-            F5.finalMedraTerms[F5.count] = F5.matchedMedraTerm;
+        splicer.matchedMeddraTerm = splicer.matchedMeddraTerm.trim();
+        if (splicer.matchedMeddraTerm.equalsIgnoreCase(splicer.finalMeddraTerms[splicer.count])) {
+            splicer.transformFlag = splicer.finalMeddraTerms[splicer.count];
+            splicer.termForEscape = splicer.finalMeddraTerms[splicer.count];
+        } else {
+            splicer.transformFlag = splicer.origTerm;
+            splicer.matchedMeddraTerm = splicer.matchedMeddraTerm.trim();
+            splicer.termForEscape = splicer.matchedMeddraTerm;
+            splicer.finalMeddraTerms[splicer.count] = splicer.matchedMeddraTerm;
         }
-
     }
 
     public void attemptEscapeMatch() {
-        F5.origTerm2 = F5.finalMedraTerms[F5.count];
-        F5.tempArray = F5.termForEscape.split(" ");
+        splicer.origTerm2 = splicer.finalMeddraTerms[splicer.count];
+        splicer.tempArray = splicer.termForEscape.split(" ");
         StringBuilder allWords2 = new StringBuilder();
 
-        for (int j = 0; j < F5.tempArray.length; ++j) {
-            boolean isStopWord = F5.stopSet.contains(F5.tempArray[j]);
+        for (int j = 0; j < splicer.tempArray.length; ++j) {
+            boolean isStopWord = Reference.stopSet().contains(splicer.tempArray[j]);
             if (!isStopWord) {
-                String stemmedWord = F5.portStem(F5.tempArray[j]);
+                String stemmedWord = PorterStemmer.portStem(splicer.tempArray[j]);
                 if (stemmedWord.equalsIgnoreCase("Invalid term")) {
-                    stemmedWord = F5.tempArray[j];
+                    stemmedWord = splicer.tempArray[j];
                 }
 
                 allWords2.append(" ").append(stemmedWord);
             }
         }
 
-        F5.termForEscape = allWords2.toString();
-        F5.termForEscape = F5.termForEscape.trim();
-        F5.transformedEscape = cle.cleanTermEscape(F5.termForEscape);
+        splicer.termForEscape = allWords2.toString();
+        splicer.termForEscape = splicer.termForEscape.trim();
+        splicer.cleanUp.cleanTermEscape(splicer.termForEscape);
     }
 
     public void labCheck() {
         int sentNumForTest;
         String sentForTest;
-        if (Integer.parseInt(F5.sentNumArray[F5.count]) > -1) {
-            sentNumForTest = Integer.parseInt(F5.sentNumArray[F5.count]);
-            sentForTest = F5.sent[sentNumForTest];
+        if (Integer.parseInt(splicer.sentNumArray[splicer.count]) > -1) {
+            sentNumForTest = Integer.parseInt(splicer.sentNumArray[splicer.count]);
+            sentForTest = splicer.sent[sentNumForTest];
             if (sentForTest == null) {
                 sentForTest = "";
             }
@@ -277,29 +270,42 @@ public class Flow {
             sentForTest = " ";
         }
 
-        if (F5.origMethod.contains("T")) {
-            sentForTest = F5.origTerm;
+        if (splicer.origMethod.toString().contains("T")) {
+            sentForTest = splicer.origTerm;
         }
 
-        F5.direction = CleanUp.getLabDirection(F5.finalMedraTerms[F5.count], sentForTest, F5.finalsSection[F5.count], F5.transformFlag, F5.finalsMethod[F5.count]);
-        F5.labTransformOccurred = false;
-        if (F5.direction.equals("increased") || F5.direction.equals("decreased") || F5.direction.equals("abnormal")) {
-            F5.labTransformOccurred = CleanUp.transformLab2Medra(F5.finalMedraTerms[F5.count], F5.direction);
+        splicer.direction = splicer.cleanUp.getLabDirection(splicer.finalMeddraTerms[splicer.count], sentForTest, splicer.finalsSection[splicer.count], splicer.transformFlag, splicer.finalsMethod[splicer.count]);
+        splicer.labTransformOccurred = false;
+        if (splicer.direction.equals("increased") || splicer.direction.equals("decreased") || splicer.direction.equals("abnormal")) {
+            splicer.labTransformOccurred = splicer.cleanUp.transformLab2Medra(splicer.finalMeddraTerms[splicer.count], splicer.direction);
         }
 
     }
 
     public void regularOutput() {
-        F5.escapeMatchOccurred = true;
+        splicer.escapeMatchOccurred = true;
         sendToDatabase();
     }
 
     public void finalFilter() {
-        F5.transformFlag = Normals.clip(F5.transformFlag);
-        F5.finalMedraTerms[F5.count] = Normals.clip(F5.finalMedraTerms[F5.count]);
-        F5.passedFinalFilter = CleanUp.finalFilter();
-        Normals.normalizeFilter(F5.finalMedraTerms[F5.count]);
-        F5.transformFlag = Normals.normalizeFilter(F5.transformFlag);
-        F5.finalMedraTerms[F5.count] = cle.finalTransform(F5.finalMedraTerms[F5.count]);
+        splicer.transformFlag = Normals.clip(splicer.transformFlag);
+        splicer.finalMeddraTerms[splicer.count] = Normals.clip(splicer.finalMeddraTerms[splicer.count]);
+        splicer.passedFinalFilter = splicer.cleanUp.finalFilter();
+        Normals.normalizeFilter(splicer.finalMeddraTerms[splicer.count]);
+        splicer.transformFlag = Normals.normalizeFilter(splicer.transformFlag);
+        splicer.finalMeddraTerms[splicer.count] = finalTransform(splicer.finalMeddraTerms[splicer.count]);
     }
+
+    private String finalTransform(String fm) {
+        if (fm.equalsIgnoreCase("alte")) {
+            return "SGPT increased";
+        } else {
+            return fm.equalsIgnoreCase("fatigueability") ? "fatigue" : fm;
+        }
+    }
+
+    private static String qtd(String s) {
+        return "'" + s + "'";
+    }
+
 }

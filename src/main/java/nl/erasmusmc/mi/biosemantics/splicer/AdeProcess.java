@@ -6,7 +6,9 @@ import org.apache.logging.log4j.Logger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static nl.erasmusmc.mi.biosemantics.splicer.Database.*;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_MEDDRA_DB_WITHOUT_REVERSE;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS;
+import static nl.erasmusmc.mi.biosemantics.splicer.Database.TABLE_MEDSYNS;
 import static nl.erasmusmc.mi.biosemantics.splicer.Database.getConnection;
 import static nl.erasmusmc.mi.biosemantics.splicer.F5.fail;
 import static nl.erasmusmc.mi.biosemantics.splicer.Method.L1;
@@ -20,11 +22,10 @@ import static nl.erasmusmc.mi.biosemantics.splicer.Method.T1M1;
 public class AdeProcess {
 
     private static final Logger log = LogManager.getLogger();
+    private final String[] allWords3 = new String[1000];
+    private final Splicer splicer;
     private String se = "";
     private String[] tempArray3 = new String[100];
-    private final String[] allWords3 = new String[1000];
-
-    private final Splicer splicer;
 
     public AdeProcess(Splicer splicer) {
         this.splicer = splicer;
@@ -33,7 +34,7 @@ public class AdeProcess {
     public void getMeddraTerms(String b) {
         if (!b.isBlank()) {
             String q = "SELECT Medra2 FROM " + TABLE_MEDDRA_DB_WITHOUT_REVERSE + " WHERE INSTR(?, Medra2)>0";
-            try (var ps = getConnection().prepareStatement(q)) {
+            try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
                 ps.setString(1, " " + b + " ");
                 ResultSet rs = ps.executeQuery();
                 while (rs.next()) {
@@ -56,7 +57,7 @@ public class AdeProcess {
     public void getMeddraTermsStop(String b) {
         log.debug("Getting MedDRA Terms Stop {}", b);
         String q = "SELECT Medra2 FROM " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " WHERE INSTR(?, Stops)>0";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, " " + b.trim() + " ");
             ResultSet rs = ps.executeQuery();
 
@@ -77,7 +78,7 @@ public class AdeProcess {
 
     public void getMeddraSynonyms(String b) {
         var q = "SELECT MDRTerm FROM " + TABLE_MEDSYNS + " WHERE INSTR(?, Effect)>0";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, b);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
@@ -96,7 +97,7 @@ public class AdeProcess {
 
     public void getMeddraTermsIndications(String b) {
         String q = "SELECT DISTINCT Medra2 FROM " + TABLE_MEDDRA_DB_WITHOUT_REVERSE + " WHERE INSTR(?, Medra2)>0";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, " " + b + " ");
             ResultSet rs = ps.executeQuery();
 
@@ -115,7 +116,7 @@ public class AdeProcess {
 
     public void getMeddraTermsEscape2(String b) {
         String q = "SELECT Medra2, Stems FROM " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " WHERE INSTR(?, Stems)>0";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, " " + b + " ");
             ResultSet rs = ps.executeQuery();
 
@@ -136,10 +137,10 @@ public class AdeProcess {
 
     public void getMeddraSynsEscape(String b) {
         var q = "SELECT MDRTerm FROM " + TABLE_MEDSYNS + " WHERE (((INSTR(?, Effect))>0))";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, b);
             var rs = ps.executeQuery();
-            while (rs.next()){
+            while (rs.next()) {
                 allWords3[splicer.meddraCount] = rs.getString("MDRTerm");
                 ++splicer.meddraCount;
             }

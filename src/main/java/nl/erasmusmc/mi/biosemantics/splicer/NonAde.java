@@ -4,15 +4,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class NonAde {
-    private static final Logger log = LogManager.getLogger();
     public static final String ACTIVE_MOIETY = "<activeMoiety>";
     public static final String NAME_TAG_OPEN = "<name";
     public static final String NAME_TAG_CLOSE = "</name";
     public static final String PREGNANCY_CATEGORY = "PREGNANCY CATEGORY";
     public static final String CATEGORY = "Category";
-    private String shortGenDrugName = "";
-
+    private static final Logger log = LogManager.getLogger();
     private final Splicer splicer;
+    private String shortGenDrugName = "";
 
 
     public NonAde(Splicer splicer) {

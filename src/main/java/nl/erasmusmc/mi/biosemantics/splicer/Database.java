@@ -1,10 +1,11 @@
 package nl.erasmusmc.mi.biosemantics.splicer;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Database {
@@ -20,37 +21,32 @@ public class Database {
     public static final String TABLE_SYN_2 = "syn2";
 
     private static final Logger log = LogManager.getLogger();
-    private static Connection connection;
+    private static final HikariConfig config = new HikariConfig();
+    private static HikariDataSource ds;
 
     private Database() {
     }
 
-    public static Connection getConnection() {
-        try {
-            if (connection == null || !connection.isValid(3)) {
-                log.info("Getting database connection details");
-                String userName = System.getProperty("db_user");
-                String password = System.getProperty("db_pass");
-                String connectionString = System.getProperty("db_conn");
-                connectionString += "&allowMultiQueries=true";
-                log.info("Connecting to: {}", connectionString);
-                connection = DriverManager.getConnection(connectionString, userName, password);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-        return connection;
+    public static void init(String url, String user, String password) {
+        log.info("Initializing database connection pool");
+        config.setJdbcUrl(url + "&allowMultiQueries=true");
+        config.setUsername(user);
+        config.setPassword(password);
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        config.setMaximumPoolSize(12);
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        ds = new HikariDataSource(config);
+        log.info("Database connection pool initialized");
     }
 
+    public static Connection getConnection() throws SQLException {
+        return ds.getConnection();
+    }
 
-    public static void closeConnection() {
-        try {
-            getConnection().close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+    public static void close() {
+        ds.close();
     }
 
 }

@@ -11,8 +11,9 @@ import static nl.erasmusmc.mi.biosemantics.splicer.Method.T1;
 public class Tables {
     private static final Logger log = LogManager.getLogger();
     private final String[] freqArray = new String[10000];
-    private int maxFreqArray = 0;
     private final String[] condArray = new String[10000];
+    private final Splicer splicer;
+    private int maxFreqArray = 0;
     private int maxCondArray = 0;
     private boolean skipTable = true;
     private String targetReact = "";
@@ -20,7 +21,6 @@ public class Tables {
     private String freq = "";
     private String plac = "";
     private String pattern = "";
-    private final Splicer splicer;
     private String tableN = "";
 
 

@@ -13,6 +13,11 @@ import static nl.erasmusmc.mi.biosemantics.splicer.F5.fail;
 
 public class Section {
     private static final Logger log = LogManager.getLogger();
+    private final StringBuilder highValueCont = new StringBuilder();
+    private final StringBuilder lowValueInd = new StringBuilder();
+    private final StringBuilder lowValueCont = new StringBuilder();
+    private final Splicer splicer;
+    int contInt = 0;
     private String allContInfo = "";
     private int adiInt = 0;
     private int adiInt2 = 0;
@@ -24,10 +29,6 @@ public class Section {
     private int warnInt = 0;
     private int boxInt = 0;
     private int adeInt = 0;
-    int contInt = 0;
-    private final StringBuilder highValueCont = new StringBuilder();
-    private final StringBuilder lowValueInd = new StringBuilder();
-    private final StringBuilder lowValueCont = new StringBuilder();
     private String allWarnInfo = "";
     private String allOverInfo = "";
     private String allBoxInfo = "";
@@ -36,11 +37,26 @@ public class Section {
     private String allIndInfo = "";
     private int pedInt = 0;
     private String allPedInfo = "";
-    private final Splicer splicer;
 
 
     public Section(Splicer splicer) {
         this.splicer = splicer;
+    }
+
+    private static String stopOnly(String b) {
+        String[] tempArray = b.toLowerCase().split(" ");
+        StringBuilder allWords = new StringBuilder();
+
+        for (String s : tempArray) {
+            boolean isStopWord = Reference.stopSet().contains(s);
+            if (!isStopWord) {
+                allWords.append(" ").append(s);
+            }
+        }
+
+        allWords = new StringBuilder(allWords.toString().trim());
+        allWords.insert(0, " ");
+        return allWords.toString();
     }
 
     public void getSections(File file) {
@@ -393,22 +409,6 @@ public class Section {
         stopOnly(normLvc);
         splicer.adeProcess.getMeddraTermsStop(normHvc);
         splicer.adeProcess.getUniqueLCS3();
-    }
-
-    private static String stopOnly(String b) {
-        String[] tempArray = b.toLowerCase().split(" ");
-        StringBuilder allWords = new StringBuilder();
-
-        for (String s : tempArray) {
-            boolean isStopWord = Reference.stopSet().contains(s);
-            if (!isStopWord) {
-                allWords.append(" ").append(s);
-            }
-        }
-
-        allWords = new StringBuilder(allWords.toString().trim());
-        allWords.insert(0, " ");
-        return allWords.toString();
     }
 
 }

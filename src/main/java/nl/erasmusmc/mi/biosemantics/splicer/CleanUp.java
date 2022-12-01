@@ -61,7 +61,7 @@ public class CleanUp {
         b = b.trim();
         tempArray = b.split(" ");
         var q = "Select Medra2, Stems from " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " where Stems LIKE ?";
-        try (var stmt = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q)) {
             stmt.setString(1, "%" + tempArray[0] + "%");
             ResultSet rs = stmt.executeQuery();
 
@@ -116,7 +116,7 @@ public class CleanUp {
 
         var q = "Select MDRTerm, EffectStems from " + TABLE_MEDSYNS_WITHSTEMS + " where EffectStems LIKE ?";
 
-        try (var stmt = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q)) {
             stmt.setString(1, "%" + tempArray[0] + "%");
             ResultSet rs = stmt.executeQuery();
 
@@ -169,7 +169,7 @@ public class CleanUp {
 
     private boolean checkMeddra(String b) {
         var q = "Select Medra2, Stems from " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " where Stems = ? limit 1";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, " " + b.trim() + " ");
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -185,7 +185,7 @@ public class CleanUp {
 
     private boolean checkMeddra2(String b) {
         String q = "Select Medra2, Stems from " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " where Medra2 = ?";
-        try (var stmt = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q)) {
             stmt.setString(1, " " + b.trim() + " ");
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -202,7 +202,7 @@ public class CleanUp {
     private String getSyn1(String b) {
 
         var q = "Select Field1,Field2 from " + TABLE_SYN_1 + " where (((InStr(?, Field1))>0))";
-        try (var stmt = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q)) {
             stmt.setString(1, " " + b + " ");
             ResultSet rs = stmt.executeQuery();
 
@@ -233,7 +233,7 @@ public class CleanUp {
     private String getSwit(String b) {
         String q = "Select Field1,Field2 from " + TABLE_SWIT + " where (((InStr(?, Field1))>0))";
 
-        try (var stmt = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q)) {
             stmt.setString(1, " " + b + " ");
             ResultSet rs = stmt.executeQuery();
 
@@ -268,7 +268,7 @@ public class CleanUp {
                 .replaceAll("\\)", "");
 
         var q = "Select Field1, Field2 from " + TABLE_SYN_2 + " where InStr(?, Field1)>0";
-        try (var stmt = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q)) {
             stmt.setString(1, b);
             ResultSet rs = stmt.executeQuery();
 
@@ -299,7 +299,7 @@ public class CleanUp {
 
     private String getMedSyns(String b) {
         var q = "Select MDRTerm from " + TABLE_MEDSYNS + " where Effect = ? limit 1";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, b);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
@@ -420,7 +420,7 @@ public class CleanUp {
 
     private boolean isAMeddraTest(String b) {
         var q = "Select Field1 from " + TABLE_MEDDRATESTS + " where Field1 = ? limit 1";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, b.trim());
             ResultSet rs = ps.executeQuery();
             return rs.next();
@@ -442,7 +442,7 @@ public class CleanUp {
         }
 
         var q = "SELECT medra2, stems FROM " + TABLE_MEDDRA_DB_WITHOUT_REVERSE_STEMS + " WHERE medra2 LIKE ?";
-        try (var ps = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var ps = conn.prepareStatement(q)) {
             ps.setString(1, +'%' + shortB + '%');
             ResultSet rs = ps.executeQuery();
 

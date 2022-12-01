@@ -11,8 +11,8 @@ import static nl.erasmusmc.mi.biosemantics.splicer.Method.NONE;
 import static nl.erasmusmc.mi.biosemantics.splicer.Validation.alreadyExists;
 
 public class Splicer {
-    private final Logger log = LogManager.getLogger();
     final StringBuilder highValueInd = new StringBuilder();
+    private final Logger log = LogManager.getLogger();
     int count = 1;
     String[] sent = new String[10000];
     int maxArraySentence = 0;

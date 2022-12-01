@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,6 +28,10 @@ public class Flow {
         this.splicer = splicer;
         this.tab = new Tables(splicer);
         this.allUpdateStatements = new StringBuilder();
+    }
+
+    private static String qtd(String s) {
+        return "'" + s + "'";
     }
 
     public void sendToDatabase() {
@@ -67,7 +70,7 @@ public class Flow {
 
     public void deleteFromDatabase(String b) {
         var q = "DELETE FROM " + TABLE_SPLICER_JANSSEN + " WHERE SPL_ID = ?";
-        try (var stmt = getConnection().prepareStatement(q)) {
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q)) {
             stmt.setString(1, b);
             int c = stmt.executeUpdate();
             log.debug("Delete from DB: {} rows deleted with query: {} ", c, q);
@@ -91,11 +94,11 @@ public class Flow {
     }
 
     public void commitToDB() {
-        String query = allUpdateStatements.toString();
-        if (!query.isBlank()) {
-            try (Statement stmt = getConnection().createStatement()) {
+        var q = allUpdateStatements.toString();
+        if (!q.isBlank()) {
+            try (var conn = getConnection(); var stmt = conn.createStatement()) {
                 log.info("Committing matches to database");
-                stmt.execute(query);
+                stmt.execute(q);
             } catch (SQLException e) {
                 e.printStackTrace();
             } finally {
@@ -302,10 +305,6 @@ public class Flow {
         } else {
             return fm.equalsIgnoreCase("fatigueability") ? "fatigue" : fm;
         }
-    }
-
-    private static String qtd(String s) {
-        return "'" + s + "'";
     }
 
 }

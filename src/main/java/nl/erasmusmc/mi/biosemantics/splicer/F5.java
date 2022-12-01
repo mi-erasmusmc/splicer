@@ -12,8 +12,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class F5 {
+    public static final String DB_CONN = "db_conn";
+    public static final String DB_USER = "db_user";
+    public static final String DB_PASS = "db_pass";
     private static final Logger log = LogManager.getLogger();
-
     private static String inputPath = "./data";
 
     public static void main(String[] args) {
@@ -27,10 +29,9 @@ public class F5 {
 
     private static void validateProperties() {
         Map<String, String> props = new HashMap<>(4);
-        props.put("db_conn", System.getProperty("db_conn"));
-        props.put("db_user", System.getProperty("db_user"));
-        props.put("db_pass", System.getProperty("db_pass"));
-
+        props.put(DB_CONN, System.getProperty(DB_CONN));
+        props.put(DB_USER, System.getProperty(DB_USER));
+        props.put(DB_PASS, System.getProperty(DB_PASS));
         AtomicBoolean missingProps = new AtomicBoolean(false);
         props.forEach((k, v) -> {
             if (v == null) {
@@ -40,6 +41,8 @@ public class F5 {
         });
         if (missingProps.get()) {
             System.exit(1);
+        } else {
+            Database.init(props.get(DB_CONN), props.get(DB_USER), props.get(DB_PASS));
         }
     }
 
@@ -61,17 +64,18 @@ public class F5 {
             if (multipleFiles != null && multipleFiles.length > 0) {
                 int totalFiles = multipleFiles.length;
                 AtomicInteger fileCount = new AtomicInteger();
-                (Arrays.asList(multipleFiles)).forEach(spl -> {
-                    fileCount.getAndIncrement();
-                    log.info("At file {} of {}", fileCount, totalFiles);
-                    processFile(spl);
-                });
+                (Arrays.asList(multipleFiles)).parallelStream()
+                        .forEach(spl -> {
+                            fileCount.getAndIncrement();
+                            log.info("At file {} of {}", fileCount, totalFiles);
+                            processFile(spl);
+                        });
             }
         }
     }
 
     private static void end() {
-        Database.closeConnection();
+        Database.close();
         log.info("Finished splicing");
         System.exit(0);
     }

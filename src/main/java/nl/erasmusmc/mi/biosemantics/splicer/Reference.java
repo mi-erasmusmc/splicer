@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,7 +45,7 @@ public class Reference {
 
     private static void loadDirectionDefaults() {
         var q = "SELECT labtest, direction FROM defaultdirections";
-        try (var stmt = getConnection().prepareStatement(q);
+        try (var conn = getConnection(); var stmt = conn.prepareStatement(q);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 var lab = rs.getString("LabTest");
